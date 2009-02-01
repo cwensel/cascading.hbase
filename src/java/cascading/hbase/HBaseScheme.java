@@ -89,6 +89,11 @@ public class HBaseScheme extends Scheme
     setSinkFields( allFields );
     }
 
+  public String getFamilyName()
+    {
+    return familyName;
+    }
+
   private byte[][] getFieldsBytes()
     {
     if( fields == null )

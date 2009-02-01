@@ -75,25 +75,9 @@ public class HBaseTest extends HBaseClusterTestCase
     String tableName = "testtable";
     String familyName = "testfamily";
 
-    HBaseAdmin admin = new HBaseAdmin( conf );
-
-    HTableDescriptor tableDescriptor = new HTableDescriptor( tableName );
-    HColumnDescriptor columnDescriptor = new HColumnDescriptor( familyName + ":" );
-
-    tableDescriptor.addFamily( columnDescriptor );
-
-    if( admin.tableExists( tableName ) )
-      {
-      admin.disableTable( tableName );
-      admin.deleteTable( tableName );
-      }
-
-    admin.createTable( tableDescriptor );
-
     Tap source = new Lfs( new TextLine(), inputFileLhs );
 
     Pipe pipe = new Each( "lhs", new Fields( "line" ), new RegexSplitter( new Fields( "num", "char" ), " " ) );
-    pipe = new Each( pipe, new Debug() );
 
     Tap sink = new HBaseTap( tableName, new HBaseScheme( familyName, new Fields( "num" ), new Fields( "char" ) ) );
 
@@ -101,8 +85,11 @@ public class HBaseTest extends HBaseClusterTestCase
 
     flow.complete();
 
-    String charCol = "testfamily:char";
+    verify( tableName, "testfamily:char", 5 );
+    }
 
+  private void verify( String tableName, String charCol, int expected ) throws IOException
+    {
     byte[][] columns = Bytes.toByteArrays( new String[]{charCol} );
 
     HTable table = new HTable( conf, tableName );
@@ -110,11 +97,15 @@ public class HBaseTest extends HBaseClusterTestCase
 
     System.out.println( "iterating scanner" );
 
+    int count = 0;
     for( RowResult rowResult : scanner )
       {
+      count++;
       System.out.println( "rowResult = " + rowResult.get( charCol ) );
       }
 
     scanner.close();
+
+    assertEquals( "wrong number of rows", expected, count );
     }
   }

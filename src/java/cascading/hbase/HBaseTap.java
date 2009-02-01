@@ -27,12 +27,18 @@ import java.net.URISyntaxException;
 
 import cascading.tap.Tap;
 import cascading.tap.TapException;
+import cascading.tap.SinkMode;
 import cascading.tuple.TupleEntryIterator;
 import cascading.tuple.TupleEntryCollector;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.hbase.mapred.TableOutputFormat;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.MasterNotRunningException;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.HColumnDescriptor;
 
 /**
  *
@@ -43,9 +49,18 @@ public class HBaseTap extends Tap
 
   private String tableName;
 
+  private transient HBaseAdmin hBaseAdmin;
+
   public HBaseTap( String tableName, HBaseScheme hBaseScheme )
     {
-    super( hBaseScheme );
+    super( hBaseScheme, SinkMode.APPEND );
+
+    this.tableName = tableName;
+    }
+
+  public HBaseTap( String tableName, HBaseScheme hBaseScheme, SinkMode sinkMode )
+    {
+    super( hBaseScheme, sinkMode );
 
     this.tableName = tableName;
     }
@@ -77,26 +92,55 @@ public class HBaseTap extends Tap
     return null;
     }
 
+  private HBaseAdmin getHBaseAdmin() throws MasterNotRunningException
+    {
+    if( hBaseAdmin == null )
+      hBaseAdmin = new HBaseAdmin( new HBaseConfiguration() );
+
+    return hBaseAdmin;
+    }
+
   public boolean makeDirs( JobConf conf ) throws IOException
     {
-    // todo: create resource
+    HBaseAdmin hBaseAdmin = getHBaseAdmin();
+
+    if( hBaseAdmin.tableExists( tableName ) )
+      return true;
+
+    HTableDescriptor tableDescriptor = new HTableDescriptor( tableName );
+
+    String familyName = ( (HBaseScheme) getScheme() ).getFamilyName();
+    HColumnDescriptor columnDescriptor = new HColumnDescriptor( familyName + ":" );
+
+    tableDescriptor.addFamily( columnDescriptor );
+
+    hBaseAdmin.createTable( tableDescriptor );
+
     return true;
     }
 
   public boolean deletePath( JobConf conf ) throws IOException
     {
     // eventually keep table meta-data to source table create
+    HBaseAdmin hBaseAdmin = getHBaseAdmin();
+
+    if( hBaseAdmin.tableExists( tableName ) )
+      {
+      hBaseAdmin.disableTable( tableName );
+      hBaseAdmin.deleteTable( tableName );
+      }
+
     return true;
     }
 
   public boolean pathExists( JobConf conf ) throws IOException
     {
-    return false;
+    return getHBaseAdmin().tableExists( tableName );
     }
 
   public long getPathModified( JobConf conf ) throws IOException
     {
-    return 0;
+    return System.currentTimeMillis(); // currently unable to find last mod time on a table
     }
 
   @Override
