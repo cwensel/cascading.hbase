@@ -42,7 +42,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.BytesWritable;
 
 /**
- *
+ * todo: take a map of family name to valueFields, automatically scope incoming fields to the family
  */
 public class HBaseScheme extends Scheme
   {
@@ -177,7 +177,7 @@ public class HBaseScheme extends Scheme
     String[] columns = new String[valueFields.size()];
 
     for( int i = 0; i < columns.length; i++ )
-      columns[ i ] = valueFields.get( i ).toString();
+      columns[ i ] = familyName + ":" + valueFields.get( i ).toString();
 
     return Util.join( columns, " " );
     }
