@@ -47,36 +47,6 @@ public class HBaseTest extends HBaseClusterTestCase
 //    MultiMapReducePlanner.setJobConf( properties, conf );
     }
 
-  public void testHBaseSingleFamily() throws IOException
-    {
-    // create flow to read from local file and insert into HBase
-    Tap source = new Lfs( new TextLine(), inputFileLhs );
-
-    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "num", "lower", "upper" ), " " ) );
-
-    Fields keyFields = new Fields( "num" );
-    String familyName = "common";
-    Fields valueFields = new Fields( "lower", "upper" );
-    Tap hBaseTap = new HBaseTap( "singletable", new HBaseScheme( keyFields, familyName, valueFields ), SinkMode.REPLACE );
-
-    Flow parseFlow = new FlowConnector( properties ).connect( source, hBaseTap, parsePipe );
-
-    parseFlow.complete();
-
-    verifySink( parseFlow, 5 );
-
-    // create flow to read from hbase and save to local file
-    Tap sink = new Lfs( new TextLine(), "build/test/singlefamily/", SinkMode.REPLACE );
-
-    Pipe copyPipe = new Each( "read", new Identity() );
-
-    Flow copyFlow = new FlowConnector( properties ).connect( hBaseTap, sink, copyPipe );
-
-    copyFlow.complete();
-
-    verifySink( copyFlow, 5 );
-    }
-
   public void testHBaseMultiFamily() throws IOException
     {
     // create flow to read from local file and insert into HBase

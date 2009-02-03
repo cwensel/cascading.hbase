@@ -109,6 +109,7 @@
     <echo message="building..."/>
     <echo message="using cascading lib: ${cascading.lib.core}"/>
     <mkdir dir="${build.classes}"/>
+    <mkdir dir="${build.test}"/>
     <mkdir dir="${lib.dir}"/>
 
     <javac srcdir="${src.dir}" destdir="${build.classes}" verbose="off">
@@ -117,6 +118,16 @@
 
     <copy todir="${build.classes}">
       <fileset dir="${src.dir}">
+        <exclude name="**/*.java"/>
+      </fileset>
+    </copy>
+
+    <javac srcdir="${src.test}" destdir="${build.test}" verbose="off">
+      <classpath refid="project.class.path"/>
+    </javac>
+
+    <copy todir="${build.test}">
+      <fileset dir="${src.test}">
         <exclude name="**/*.java"/>
       </fileset>
     </copy>
