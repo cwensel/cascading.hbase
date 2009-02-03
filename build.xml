@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 
-<project name="<<PROJECT NAME>>" default="build" basedir=".">
+<!--
+  ~ This work is licensed under a Creative Commons Attribution-Share Alike 3.0 United States License.
+  ~ http://creativecommons.org/licenses/by-sa/3.0/us/
+  -->
+
+<project name="cascading-hbase" default="build" basedir=".">
 
   <!-- load properties first -->
   <!--<property file="${user.home}/${name}.build.properties" />-->
@@ -10,6 +15,8 @@
   <property name="hadoop.home" location="${basedir}/../hadoop"/>
   <property name="hadoop.lib" location="${hadoop.home}/lib"/>
 
+  <property name="hbase.home" location="${basedir}/../hbase"/>
+  <property name="hbase.lib" location="${hbase.home}/lib"/>
 
   <!-- assumes Cascading shares the same parent directory, change if necessary -->
   <property name="cascading.home" location="${basedir}/../cascading"/>
@@ -43,6 +50,8 @@
   <property name="build.classes" location="${build.dir}/classes"/>
   <property name="build.test" location="${build.dir}/test"/>
 
+  <property name="test.results" location="${build.dir}/results"/>
+
   <property name="dist" location="dist"/>
 
   <path id="project.class.path">
@@ -51,18 +60,38 @@
     <pathelement location="${cascading.lib.core}"/>
     <pathelement location="${cascading.lib.xml}"/>
 
-    <fileset dir="${lib.dir}">
+    <fileset dir="${cascading.libs}">
+      <include name="**/*.jar"/>
+    </fileset>
+
+
+    <!--<fileset dir="${lib.dir}">-->
+      <!--<include name="*.jar"/>-->
+    <!--</fileset>-->
+
+    <fileset dir="${hadoop.home}">
       <include name="*.jar"/>
     </fileset>
 
-    <!-- only enable if you directly access Hadoop code in your project -->
-    <!--<fileset dir="${hadoop.lib}">-->
-    <!--<include name="*.jar"/>-->
-    <!--</fileset>-->
+    <fileset dir="${hadoop.home}/build" erroronmissingdir="false">
+      <include name="*.jar"/>
+    </fileset>
 
-    <!--<fileset dir="${hadoop.root}">-->
-    <!--<include name="*.jar"/>-->
-    <!--</fileset>-->
+    <fileset dir="${hadoop.lib}">
+      <include name="**/*.jar"/>
+    </fileset>
+
+    <fileset dir="${hbase.home}">
+      <include name="*.jar"/>
+    </fileset>
+
+    <fileset dir="${hbase.home}/build" erroronmissingdir="false">
+      <include name="*.jar"/>
+    </fileset>
+
+    <fileset dir="${hbase.lib}">
+      <include name="**/*.jar"/>
+    </fileset>
 
   </path>
 
@@ -94,24 +123,43 @@
 
   </target>
 
-  <target name="jar" depends="build" description="creates a Hadoop ready jar will all dependencies">
-
-    <!-- copy Cascading classes and libraries -->
-    <copy todir="${build.classes}/lib" file="${cascading.lib.core}"/>
-    <copy todir="${build.classes}/lib" file="${cascading.lib.xml}"/>
-    <copy todir="${build.classes}/lib">
-      <fileset dir="${cascading.libs.core}" includes="*.jar"/>
-      <fileset dir="${cascading.libs.xml}" includes="*.jar"/>
-    </copy>
-
+  <target name="jar" depends="build" description="creates module jar">
 
     <jar jarfile="${build.dir}/${ant.project.name}.jar">
       <fileset dir="${build.classes}"/>
-      <fileset dir="${basedir}" includes="lib/"/>
-      <manifest>
-        <attribute name="Main-Class" value="${ant.project.name}/Main"/>
-      </manifest>
     </jar>
+
+  </target>
+
+
+  <target name="test" depends="build">
+    <echo message="running all tests..."/>
+
+    <mkdir dir="${test.results}"/>
+    <mkdir dir="build/test/log"/>
+
+    <junit printsummary="true" showoutput="${test.showoutput}" fork="yes" haltonerror="no" haltonfailure="no" dir="."
+           maxmemory="756m">
+
+      <sysproperty key="test.cluster.enabled" value="${test.cluster.enabled}"/>
+      <sysproperty key="test.build.data" value="data"/>
+      <sysproperty key="hadoop.log.dir" value="build/test/log"/>
+
+      <!--<jvmarg value="-Xdebug"/>--><!--<jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"/>-->
+
+      <classpath>
+        <path refid="project.class.path"/>
+        <pathelement path="${java.class.path}"/>
+      </classpath>
+      <formatter type="plain" usefile="true"/>
+
+      <test name="${testcase}" todir="${test.results}" if="testcase" haltonfailure="${test.haltonerror}"/>
+      <batchtest todir="${test.results}" haltonfailure="${test.haltonerror}" unless="testcase">
+        <fileset dir="${src.test}">
+          <include name="**/*Test.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
 
   </target>
 
@@ -126,7 +174,7 @@
         <include name="src/**"/>
         <include name="lib/**"/>
         <include name="build.xml"/>
-        <include name="README.TXT"/>
+        <include name="README.txt"/>
       </fileset>
 
     </copy>

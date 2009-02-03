@@ -1,22 +1,6 @@
 /*
- * Copyright (c) 2007-2009 Concurrent, Inc. All Rights Reserved.
- *
- * Project and contact information: http://www.cascading.org/
- *
- * This file is part of the Cascading project.
- *
- * Cascading is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Cascading is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Cascading.  If not, see <http://www.gnu.org/licenses/>.
+ * This work is licensed under a Creative Commons Attribution-Share Alike 3.0 United States License.
+ * http://creativecommons.org/licenses/by-sa/3.0/us/
  */
 
 package cascading.hbase;
@@ -46,18 +30,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * The HBaseTap class is a {@link Tap} subclass. It is used in conjunction with the {@HBaseScheme} to allow for the
+ * reading and writing of data to and from a HBase cluster.
  *
  */
 public class HBaseTap extends Tap
   {
+  /** Field LOG  */
   private static final Logger LOG = LoggerFactory.getLogger( HBaseTap.class );
 
-  public static final String SCHEME = "hdfs";
+  /** Field SCHEME  */
+  public static final String SCHEME = "hbase";
 
+  /** Field tableName  */
   private String tableName;
 
+  /** Field hBaseAdmin  */
   private transient HBaseAdmin hBaseAdmin;
 
+  /**
+   * Constructor HBaseTap creates a new HBaseTap instance.
+   *
+   * @param tableName of type String
+   * @param hBaseScheme of type HBaseScheme
+   */
   public HBaseTap( String tableName, HBaseScheme hBaseScheme )
     {
     super( hBaseScheme, SinkMode.APPEND );
@@ -65,6 +61,13 @@ public class HBaseTap extends Tap
     this.tableName = tableName;
     }
 
+  /**
+   * Constructor HBaseTap creates a new HBaseTap instance.
+   *
+   * @param tableName of type String
+   * @param hBaseScheme of type HBaseScheme
+   * @param sinkMode of type SinkMode
+   */
   public HBaseTap( String tableName, HBaseScheme hBaseScheme, SinkMode sinkMode )
     {
     super( hBaseScheme, sinkMode );
@@ -114,7 +117,7 @@ public class HBaseTap extends Tap
     if( hBaseAdmin.tableExists( tableName ) )
       return true;
 
-    LOG.debug("creating hbase table: {}", tableName );
+    LOG.debug( "creating hbase table: {}", tableName );
 
     HTableDescriptor tableDescriptor = new HTableDescriptor( tableName );
 
@@ -136,7 +139,7 @@ public class HBaseTap extends Tap
     if( !hBaseAdmin.tableExists( tableName ) )
       return true;
 
-    LOG.debug("deleting hbase table: {}", tableName );
+    LOG.debug( "deleting hbase table: {}", tableName );
 
     hBaseAdmin.disableTable( tableName );
     hBaseAdmin.deleteTable( tableName );
@@ -171,6 +174,8 @@ public class HBaseTap extends Tap
   @Override
   public void sinkInit( JobConf conf ) throws IOException
     {
+    LOG.debug( "sinking to table: {}", tableName );
+
     conf.set( TableOutputFormat.OUTPUT_TABLE, tableName );
     super.sinkInit( conf );
     }
@@ -178,6 +183,8 @@ public class HBaseTap extends Tap
   @Override
   public void sourceInit( JobConf conf ) throws IOException
     {
+    LOG.debug( "sourcing from table: {}", tableName );
+
     FileInputFormat.addInputPaths( conf, tableName );
     super.sourceInit( conf );
     }

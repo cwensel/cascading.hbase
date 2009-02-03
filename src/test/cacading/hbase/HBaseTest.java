@@ -1,22 +1,6 @@
 /*
- * Copyright (c) 2007-2009 Concurrent, Inc. All Rights Reserved.
- *
- * Project and contact information: http://www.cascading.org/
- *
- * This file is part of the Cascading project.
- *
- * Cascading is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Cascading is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Cascading.  If not, see <http://www.gnu.org/licenses/>.
+ * This work is licensed under a Creative Commons Attribution-Share Alike 3.0 United States License.
+ * http://creativecommons.org/licenses/by-sa/3.0/us/
  */
 
 package cacading.hbase;
@@ -63,7 +47,7 @@ public class HBaseTest extends HBaseClusterTestCase
 //    MultiMapReducePlanner.setJobConf( properties, conf );
     }
 
-  public void testHbaseSingleFamily() throws IOException
+  public void testHBaseSingleFamily() throws IOException
     {
     // create flow to read from local file and insert into HBase
     Tap source = new Lfs( new TextLine(), inputFileLhs );
@@ -73,7 +57,7 @@ public class HBaseTest extends HBaseClusterTestCase
     Fields keyFields = new Fields( "num" );
     String familyName = "common";
     Fields valueFields = new Fields( "lower", "upper" );
-    Tap hBaseTap = new HBaseTap( "commontable", new HBaseScheme( keyFields, familyName, valueFields ), SinkMode.REPLACE );
+    Tap hBaseTap = new HBaseTap( "singletable", new HBaseScheme( keyFields, familyName, valueFields ), SinkMode.REPLACE );
 
     Flow parseFlow = new FlowConnector( properties ).connect( source, hBaseTap, parsePipe );
 
@@ -81,7 +65,7 @@ public class HBaseTest extends HBaseClusterTestCase
 
     verifySink( parseFlow, 5 );
 
-    // creaet flow to read from hbase and save to local file
+    // create flow to read from hbase and save to local file
     Tap sink = new Lfs( new TextLine(), "build/test/singlefamily/", SinkMode.REPLACE );
 
     Pipe copyPipe = new Each( "read", new Identity() );
@@ -93,7 +77,7 @@ public class HBaseTest extends HBaseClusterTestCase
     verifySink( copyFlow, 5 );
     }
 
-  public void testHbaseMultiFamily() throws IOException
+  public void testHBaseMultiFamily() throws IOException
     {
     // create flow to read from local file and insert into HBase
     Tap source = new Lfs( new TextLine(), inputFileLhs );
@@ -103,7 +87,7 @@ public class HBaseTest extends HBaseClusterTestCase
     Fields keyFields = new Fields( "num" );
     String[] familyNames = {"left", "right"};
     Fields[] valueFields = new Fields[] {new Fields( "lower" ), new Fields( "upper" ) };
-    Tap hBaseTap = new HBaseTap( "commontable", new HBaseScheme( keyFields, familyNames, valueFields ), SinkMode.REPLACE );
+    Tap hBaseTap = new HBaseTap( "multitable", new HBaseScheme( keyFields, familyNames, valueFields ), SinkMode.REPLACE );
 
     Flow parseFlow = new FlowConnector( properties ).connect( source, hBaseTap, parsePipe );
 
@@ -111,7 +95,7 @@ public class HBaseTest extends HBaseClusterTestCase
 
     verifySink( parseFlow, 5 );
 
-    // creaet flow to read from hbase and save to local file
+    // create flow to read from hbase and save to local file
     Tap sink = new Lfs( new TextLine(), "build/test/multifamily", SinkMode.REPLACE );
 
     Pipe copyPipe = new Each( "read", new Identity() );
@@ -128,6 +112,7 @@ public class HBaseTest extends HBaseClusterTestCase
     int count = 0;
 
     TupleEntryIterator iterator = flow.openSink();
+
     while(iterator.hasNext())
       {
       count++;

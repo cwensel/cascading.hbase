@@ -1,22 +1,6 @@
 /*
- * Copyright (c) 2007-2009 Concurrent, Inc. All Rights Reserved.
- *
- * Project and contact information: http://www.cascading.org/
- *
- * This file is part of the Cascading project.
- *
- * Cascading is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Cascading is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Cascading.  If not, see <http://www.gnu.org/licenses/>.
+ * This work is licensed under a Creative Commons Attribution-Share Alike 3.0 United States License.
+ * http://creativecommons.org/licenses/by-sa/3.0/us/
  */
 
 package cascading.hbase;
@@ -38,23 +22,49 @@ import org.apache.hadoop.hbase.io.BatchUpdate;
 import org.apache.hadoop.hbase.io.RowResult;
 import org.apache.hadoop.hbase.io.Cell;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * todo: take a map of family name to valueFields, automatically scope incoming fields to the family
+ * The HBaseScheme class is a {@link Scheme} subclass. It is used in conjunction with the {@HBaseTap} to allow for the
+ * reading and writing of data to and from a HBase cluster.
+ *
+ * @see HBaseTap
  */
 public class HBaseScheme extends Scheme
   {
+  /** Field LOG  */
+  private static final Logger LOG = LoggerFactory.getLogger( HBaseScheme.class );
+
+  /** Field keyFields  */
   private Fields keyFields;
+  /** Field familyNames  */
   private String[] familyNames;
+  /** Field valueFields  */
   private Fields[] valueFields;
 
+  /** Field fields  */
   private transient byte[][] fields;
 
+  /**
+   * Constructor HBaseScheme creates a new HBaseScheme instance.
+   *
+   * @param keyFields of type Fields
+   * @param familyName of type String
+   * @param valueFields of type Fields
+   */
   public HBaseScheme( Fields keyFields, String familyName, Fields valueFields )
     {
     this( keyFields, new String[]{familyName}, Fields.fields( valueFields ) );
     }
 
+  /**
+   * Constructor HBaseScheme creates a new HBaseScheme instance.
+   *
+   * @param keyFields of type Fields
+   * @param familyNames of type String[]
+   * @param valueFields of type Fields[]
+   */
   public HBaseScheme( Fields keyFields, String[] familyNames, Fields[] valueFields )
     {
     this.keyFields = keyFields;
@@ -80,6 +90,11 @@ public class HBaseScheme extends Scheme
     setSinkFields( allFields );
     }
 
+  /**
+   * Method getFamilyNames returns the familyNames of this HBaseScheme object.
+   *
+   * @return the familyNames (type String[]) of this HBaseScheme object.
+   */
   public String[] getFamilyNames()
     {
     return familyNames;
@@ -125,7 +140,6 @@ public class HBaseScheme extends Scheme
 
       for( int j = 0; j < values.getFields().size(); j++ )
         {
-        // family_name:column_name
         Fields fields = values.getFields();
         Tuple tuple = values.getTuple();
         batchUpdate.put( familyNames[ i ] + ":" + fields.get( j ), Bytes.toBytes( tuple.getString( j ) ) );
@@ -147,7 +161,10 @@ public class HBaseScheme extends Scheme
     {
     conf.setInputFormat( TableInputFormat.class );
 
-    conf.set( TableInputFormat.COLUMN_LIST, getColumns() );
+    String columns = getColumns();
+    LOG.debug( "sourcing from columns: {}", columns );
+
+    conf.set( TableInputFormat.COLUMN_LIST, columns );
     }
 
   private String getColumns()
