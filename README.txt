@@ -12,6 +12,11 @@ Welcome
 
    http://www.cascading.org/
 
+ HBase is the Hadoop database. Its an open-source, distributed,
+ column-oriented store modeled after the Google paper on Bigtable.
+
+   http://hadoop.apache.org/hbase/
+
  This module is licensed under the
  Creative Commons Attribution-Share Alike 3.0 United States License.
 
