@@ -3,7 +3,7 @@
  * http://creativecommons.org/licenses/by-sa/3.0/us/
  */
 
-package cacading.hbase;
+package cascading.hbase;
 
 import java.io.IOException;
 import java.util.HashMap;
