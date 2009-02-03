@@ -54,7 +54,6 @@ public class HBaseTest extends HBaseClusterTestCase
   transient private static Map<Object, Object> properties = new HashMap<Object, Object>();
 
   String inputFileLhs = "src/test/data/lhs.txt";
-  String inputFileRhs = "src/test/data/rhs.txt";
 
   public HBaseTest()
     {
@@ -69,44 +68,39 @@ public class HBaseTest extends HBaseClusterTestCase
 //    MultiMapReducePlanner.setJobConf( properties, conf );
     }
 
-  public void testHbaseWrite() throws IOException
+  public void testHbase() throws IOException
     {
     String tableName = "testtable";
     String familyName = "testfamily";
 
     Tap source = new Lfs( new TextLine(), inputFileLhs );
 
-    Pipe pipe = new Each( "write", new Fields( "line" ), new RegexSplitter( new Fields( "num", "char" ), " " ) );
+    Pipe parsePipe = new Each( "write", new Fields( "line" ), new RegexSplitter( new Fields( "num", "char" ), " " ) );
 
-    Tap sink = new HBaseTap( tableName, new HBaseScheme( familyName, new Fields( "num" ), new Fields( "char" ) ) );
+    Tap hBaseTap = new HBaseTap( tableName, new HBaseScheme( familyName, new Fields( "num" ), new Fields( "char" ) ), SinkMode.REPLACE );
 
-    Flow flow = new FlowConnector( properties ).connect( source, sink, pipe );
+    Flow parseFlow = new FlowConnector( properties ).connect( source, hBaseTap, parsePipe );
 
-    flow.complete();
+    parseFlow.complete();
 
-    verify( tableName, "testfamily:char", 5 );
-    }
-
-  public void testHbaseRead() throws IOException
-    {
-    String tableName = "testtable";
-    String familyName = "testfamily";
-
-    loadTable( tableName, "testfamily:char", 5 );
-
-    Tap source = new HBaseTap( tableName, new HBaseScheme( familyName, new Fields( "num" ), new Fields( "char" ) ) );
+    verifySink( parseFlow, 5 );
 
     Tap sink = new Lfs( new TextLine(), "build/test/writetest", SinkMode.REPLACE );
 
-    Pipe pipe = new Each( "read", new Identity() );
+    Pipe copyPipe = new Each( "read", new Identity() );
 
-    Flow flow = new FlowConnector( properties ).connect( source, sink, pipe );
+    Flow copyFlow = new FlowConnector( properties ).connect( hBaseTap, sink, copyPipe );
 
-    flow.complete();
+    copyFlow.complete();
+
+    verifySink( copyFlow, 5 );
+    }
+
+  private void verifySink( Flow flow, int expects ) throws IOException
+    {
+    int count = 0;
 
     TupleEntryIterator iterator = flow.openSink();
-
-    int count = 0;
     while(iterator.hasNext())
       {
       count++;
@@ -114,45 +108,7 @@ public class HBaseTest extends HBaseClusterTestCase
       }
 
     iterator.close();
-    
-    assertEquals( "wrong number of values", 5, count );
-    }
 
-  private void loadTable( String tableName, String charCol, int size ) throws IOException
-    {
-    HTable table = new HTable( conf, tableName );
-
-    for( int i = 0; i < size; i++ )
-      {
-      byte[] bytes = Bytes.toBytes( Integer.toString( i ) );
-      BatchUpdate batchUpdate = new BatchUpdate( bytes );
-
-      batchUpdate.put( charCol, bytes );
-
-      table.commit( batchUpdate );
-      }
-
-    table.close();
-    }
-
-  private void verify( String tableName, String charCol, int expected ) throws IOException
-    {
-    byte[][] columns = Bytes.toByteArrays( new String[]{charCol} );
-
-    HTable table = new HTable( conf, tableName );
-    Scanner scanner = table.getScanner( columns );
-
-    System.out.println( "iterating scanner" );
-
-    int count = 0;
-    for( RowResult rowResult : scanner )
-      {
-      count++;
-      System.out.println( "rowResult = " + rowResult.get( charCol ) );
-      }
-
-    scanner.close();
-
-    assertEquals( "wrong number of rows", expected, count );
+    assertEquals( "wrong number of values", expects, count );
     }
   }

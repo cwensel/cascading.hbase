@@ -28,8 +28,12 @@ import java.net.URISyntaxException;
 import cascading.tap.Tap;
 import cascading.tap.TapException;
 import cascading.tap.SinkMode;
+import cascading.tap.hadoop.TapIterator;
+import cascading.tap.hadoop.TapCollector;
 import cascading.tuple.TupleEntryIterator;
 import cascading.tuple.TupleEntryCollector;
+import cascading.flow.Flow;
+import cascading.flow.MapReduceFlow;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -39,12 +43,16 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class HBaseTap extends Tap
   {
+  private static final Logger LOG = LoggerFactory.getLogger( HBaseTap.class );
+
   public static final String SCHEME = "hdfs";
 
   private String tableName;
@@ -84,12 +92,12 @@ public class HBaseTap extends Tap
 
   public TupleEntryIterator openForRead( JobConf conf ) throws IOException
     {
-    return null;
+    return new TupleEntryIterator( getSourceFields(), new TapIterator( this, conf ) );
     }
 
   public TupleEntryCollector openForWrite( JobConf conf ) throws IOException
     {
-    return null;
+    return new TapCollector( this, conf );
     }
 
   private HBaseAdmin getHBaseAdmin() throws MasterNotRunningException
@@ -106,6 +114,8 @@ public class HBaseTap extends Tap
 
     if( hBaseAdmin.tableExists( tableName ) )
       return true;
+
+    LOG.debug("creating hbase table: {}", tableName );
 
     HTableDescriptor tableDescriptor = new HTableDescriptor( tableName );
 
@@ -124,11 +134,13 @@ public class HBaseTap extends Tap
     // eventually keep table meta-data to source table create
     HBaseAdmin hBaseAdmin = getHBaseAdmin();
 
-    if( hBaseAdmin.tableExists( tableName ) )
-      {
-      hBaseAdmin.disableTable( tableName );
-      hBaseAdmin.deleteTable( tableName );
-      }
+    if( !hBaseAdmin.tableExists( tableName ) )
+      return true;
+
+    LOG.debug("deleting hbase table: {}", tableName );
+
+    hBaseAdmin.disableTable( tableName );
+    hBaseAdmin.deleteTable( tableName );
 
     return true;
     }
@@ -141,6 +153,20 @@ public class HBaseTap extends Tap
   public long getPathModified( JobConf conf ) throws IOException
     {
     return System.currentTimeMillis(); // currently unable to find last mod time on a table
+    }
+
+  @Override
+  public void flowInit( Flow flow )
+    {
+    try
+      {
+      makeDirs( flow.getJobConf() );
+      }
+    catch( IOException exception )
+      {
+
+      }
+    super.flowInit( flow );
     }
 
   @Override
