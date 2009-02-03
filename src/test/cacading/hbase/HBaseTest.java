@@ -40,11 +40,6 @@ import cascading.tap.SinkMode;
 import cascading.tuple.Fields;
 import cascading.tuple.TupleEntryIterator;
 import org.apache.hadoop.hbase.HBaseClusterTestCase;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Scanner;
-import org.apache.hadoop.hbase.io.RowResult;
-import org.apache.hadoop.hbase.io.BatchUpdate;
-import org.apache.hadoop.hbase.util.Bytes;
 
 /**
  *
@@ -53,7 +48,7 @@ public class HBaseTest extends HBaseClusterTestCase
   {
   transient private static Map<Object, Object> properties = new HashMap<Object, Object>();
 
-  String inputFileLhs = "src/test/data/lhs.txt";
+  String inputFileLhs = "src/test/data/small.txt";
 
   public HBaseTest()
     {
@@ -68,16 +63,17 @@ public class HBaseTest extends HBaseClusterTestCase
 //    MultiMapReducePlanner.setJobConf( properties, conf );
     }
 
-  public void testHbase() throws IOException
+  public void testHbaseSingleFamily() throws IOException
     {
-    String tableName = "testtable";
-    String familyName = "testfamily";
-
+    // create flow to read from local file and insert into HBase
     Tap source = new Lfs( new TextLine(), inputFileLhs );
 
-    Pipe parsePipe = new Each( "write", new Fields( "line" ), new RegexSplitter( new Fields( "num", "char" ), " " ) );
+    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "num", "lower", "upper" ), " " ) );
 
-    Tap hBaseTap = new HBaseTap( tableName, new HBaseScheme( familyName, new Fields( "num" ), new Fields( "char" ) ), SinkMode.REPLACE );
+    Fields keyFields = new Fields( "num" );
+    String familyName = "common";
+    Fields valueFields = new Fields( "lower", "upper" );
+    Tap hBaseTap = new HBaseTap( "commontable", new HBaseScheme( keyFields, familyName, valueFields ), SinkMode.REPLACE );
 
     Flow parseFlow = new FlowConnector( properties ).connect( source, hBaseTap, parsePipe );
 
@@ -85,7 +81,38 @@ public class HBaseTest extends HBaseClusterTestCase
 
     verifySink( parseFlow, 5 );
 
-    Tap sink = new Lfs( new TextLine(), "build/test/writetest", SinkMode.REPLACE );
+    // creaet flow to read from hbase and save to local file
+    Tap sink = new Lfs( new TextLine(), "build/test/singlefamily/", SinkMode.REPLACE );
+
+    Pipe copyPipe = new Each( "read", new Identity() );
+
+    Flow copyFlow = new FlowConnector( properties ).connect( hBaseTap, sink, copyPipe );
+
+    copyFlow.complete();
+
+    verifySink( copyFlow, 5 );
+    }
+
+  public void testHbaseMultiFamily() throws IOException
+    {
+    // create flow to read from local file and insert into HBase
+    Tap source = new Lfs( new TextLine(), inputFileLhs );
+
+    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "num", "lower", "upper" ), " " ) );
+
+    Fields keyFields = new Fields( "num" );
+    String[] familyNames = {"left", "right"};
+    Fields[] valueFields = new Fields[] {new Fields( "lower" ), new Fields( "upper" ) };
+    Tap hBaseTap = new HBaseTap( "commontable", new HBaseScheme( keyFields, familyNames, valueFields ), SinkMode.REPLACE );
+
+    Flow parseFlow = new FlowConnector( properties ).connect( source, hBaseTap, parsePipe );
+
+    parseFlow.complete();
+
+    verifySink( parseFlow, 5 );
+
+    // creaet flow to read from hbase and save to local file
+    Tap sink = new Lfs( new TextLine(), "build/test/multifamily", SinkMode.REPLACE );
 
     Pipe copyPipe = new Each( "read", new Identity() );
 

@@ -33,7 +33,6 @@ import cascading.tap.hadoop.TapCollector;
 import cascading.tuple.TupleEntryIterator;
 import cascading.tuple.TupleEntryCollector;
 import cascading.flow.Flow;
-import cascading.flow.MapReduceFlow;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -119,10 +118,10 @@ public class HBaseTap extends Tap
 
     HTableDescriptor tableDescriptor = new HTableDescriptor( tableName );
 
-    String familyName = ( (HBaseScheme) getScheme() ).getFamilyName();
-    HColumnDescriptor columnDescriptor = new HColumnDescriptor( familyName + ":" );
+    String[] familyNames = ( (HBaseScheme) getScheme() ).getFamilyNames();
 
-    tableDescriptor.addFamily( columnDescriptor );
+    for( String familyName : familyNames )
+      tableDescriptor.addFamily( new HColumnDescriptor( familyName + ":" ) );
 
     hBaseAdmin.createTable( tableDescriptor );
 

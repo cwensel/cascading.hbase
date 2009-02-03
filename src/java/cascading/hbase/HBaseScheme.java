@@ -31,7 +31,6 @@ import cascading.tap.Tap;
 import cascading.util.Util;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.hbase.mapred.TableOutputFormat;
 import org.apache.hadoop.hbase.mapred.TableInputFormat;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -39,38 +38,30 @@ import org.apache.hadoop.hbase.io.BatchUpdate;
 import org.apache.hadoop.hbase.io.RowResult;
 import org.apache.hadoop.hbase.io.Cell;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.BytesWritable;
 
 /**
  * todo: take a map of family name to valueFields, automatically scope incoming fields to the family
  */
 public class HBaseScheme extends Scheme
   {
-  private String familyName;
   private Fields keyFields;
-  private Fields valueFields;
-  private byte[][] fields;
+  private String[] familyNames;
+  private Fields[] valueFields;
 
+  private transient byte[][] fields;
 
-  public HBaseScheme( String familyName, Fields keyFields, Fields valueFields )
+  public HBaseScheme( Fields keyFields, String familyName, Fields valueFields )
     {
-    this.familyName = familyName;
-    this.keyFields = keyFields;
-    this.valueFields = valueFields;
-
-    setSourceSink( keyFields, valueFields );
-
-    validate();
+    this( keyFields, new String[]{familyName}, Fields.fields( valueFields ) );
     }
 
-  public HBaseScheme( String familyName, Fields keyFields, Fields valueFields, int numSinkParts )
+  public HBaseScheme( Fields keyFields, String[] familyNames, Fields[] valueFields )
     {
-    this.familyName = familyName;
     this.keyFields = keyFields;
+    this.familyNames = familyNames;
     this.valueFields = valueFields;
 
-    setSourceSink( keyFields, valueFields );
-    setNumSinkParts( numSinkParts );
+    setSourceSink( this.keyFields, this.valueFields );
 
     validate();
     }
@@ -81,35 +72,25 @@ public class HBaseScheme extends Scheme
       throw new IllegalArgumentException( "may only have one key field, found: " + keyFields.print() );
     }
 
-  private void setSourceSink( Fields keyFields, Fields valueFields )
+  private void setSourceSink( Fields keyFields, Fields[] valueFields )
     {
-    Fields allFields = Fields.join( keyFields, valueFields );
+    Fields allFields = Fields.join( keyFields, Fields.join( valueFields ) ); // prepend keys
 
     setSourceFields( allFields );
     setSinkFields( allFields );
     }
 
-  public String getFamilyName()
+  public String[] getFamilyNames()
     {
-    return familyName;
+    return familyNames;
     }
 
   private byte[][] getFieldsBytes()
     {
     if( fields == null )
-      fields = makeBytes( valueFields );
+      fields = makeBytes( familyNames, valueFields );
 
     return fields;
-    }
-
-  private byte[][] makeBytes( Fields fields )
-    {
-    byte[][] bytes = new byte[fields.size()][];
-
-    for( int i = 0; i < fields.size(); i++ )
-      bytes[ i ] = Bytes.toBytes( familyName + ":" + (String) fields.get( i ) );
-
-    return bytes;
     }
 
   public Tuple source( Object key, Object value )
@@ -137,14 +118,18 @@ public class HBaseScheme extends Scheme
     byte[] keyBytes = Bytes.toBytes( key.getString( 0 ) );
     BatchUpdate batchUpdate = new BatchUpdate( keyBytes );
 
-    TupleEntry values = tupleEntry.selectEntry( valueFields );
-
-    for( int i = 0; i < values.getFields().size(); i++ )
+    for( int i = 0; i < valueFields.length; i++ )
       {
-      // family_name:column_name
-      Fields fields = values.getFields();
-      Tuple tuple = values.getTuple();
-      batchUpdate.put( familyName + ":" + fields.get( i ), Bytes.toBytes( tuple.getString( i ) ) );
+      Fields fieldSelector = valueFields[ i ];
+      TupleEntry values = tupleEntry.selectEntry( fieldSelector );
+
+      for( int j = 0; j < values.getFields().size(); j++ )
+        {
+        // family_name:column_name
+        Fields fields = values.getFields();
+        Tuple tuple = values.getTuple();
+        batchUpdate.put( familyNames[ i ] + ":" + fields.get( j ), Bytes.toBytes( tuple.getString( j ) ) );
+        }
       }
 
     outputCollector.collect( null, batchUpdate );
@@ -156,13 +141,6 @@ public class HBaseScheme extends Scheme
 
     conf.setOutputKeyClass( ImmutableBytesWritable.class );
     conf.setOutputValueClass( BatchUpdate.class );
-//    conf.setPartitionerClass( HRegionPartitioner.class );
-
-//    HTable outputTable = new HTable( new HBaseConfiguration( conf ), table );
-//    int regions = outputTable.getRegionsInfo().size();
-//
-//    if( conf.getNumReduceTasks() > regions )
-//      conf.setNumReduceTasks( outputTable.getRegionsInfo().size() );
     }
 
   public void sourceInit( Tap tap, JobConf conf ) throws IOException
@@ -174,12 +152,38 @@ public class HBaseScheme extends Scheme
 
   private String getColumns()
     {
-    String[] columns = new String[valueFields.size()];
+    return Util.join( columns( familyNames, valueFields ), " " );
+    }
+
+  private String[] columns( String[] familyNames, Fields[] fieldsArray )
+    {
+    int size = 0;
+
+    for( Fields fields : fieldsArray )
+      size += fields.size();
+
+    String[] columns = new String[size];
+
+    for( int i = 0; i < fieldsArray.length; i++ )
+      {
+      Fields fields = fieldsArray[ i ];
+
+      for( int j = 0; j < fields.size(); j++ )
+        columns[ i + j ] = familyNames[ i ] + ":" + (String) fields.get( j );
+      }
+
+    return columns;
+    }
+
+  private byte[][] makeBytes( String[] familyNames, Fields[] fieldsArray )
+    {
+    String[] columns = columns( familyNames, fieldsArray );
+    byte[][] bytes = new byte[columns.length][];
 
     for( int i = 0; i < columns.length; i++ )
-      columns[ i ] = familyName + ":" + valueFields.get( i ).toString();
+      bytes[ i ] = Bytes.toBytes( columns[ i ] );
 
-    return Util.join( columns, " " );
+    return bytes;
     }
 
   }
