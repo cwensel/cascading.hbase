@@ -25,6 +25,9 @@ Welcome
 
 Building
 
+ This release requires at least Cascading 1.0.1. Hadoop 0.19.x, 
+ and the related HBase release.
+
  To build a jar,
 
  > ant -Dcascading.home=... -Dhadoop.home=... -Dhbase.home=... jar
