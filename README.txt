@@ -17,15 +17,9 @@ Welcome
 
    http://hadoop.apache.org/hbase/
 
- This module is licensed under the
- Creative Commons Attribution-Share Alike 3.0 United States License.
-
-  http://creativecommons.org/licenses/by-sa/3.0/us/
-
-
 Building
 
- This release requires at least Cascading 1.0.1. Hadoop 0.19.x, 
+ This release requires at least Cascading 1.0.1. Hadoop 0.19.x,
  and the related HBase release.
 
  To build a jar,
@@ -47,3 +41,15 @@ Using
 
   See the HBaseTest unit test for sample code on using the HBase taps and
   schemes in your Cascading application.
+
+License
+
+  Copyright (c) 2009 Concurrent, Inc.
+
+  This work has been released into the public domain
+  by the copyright holder. This applies worldwide.
+
+  In case this is not legally possible:
+  The copyright holder grants any entity the right
+  to use this work for any purpose, without any
+  conditions, unless such conditions are required by law.
