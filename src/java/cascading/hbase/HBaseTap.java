@@ -165,23 +165,15 @@ public class HBaseTap extends Tap
     }
 
   @Override
-  public void flowInit( Flow flow )
-    {
-    try
-      {
-      makeDirs( flow.getJobConf() );
-      }
-    catch( IOException exception )
-      {
-
-      }
-    super.flowInit( flow );
-    }
-
-  @Override
   public void sinkInit( JobConf conf ) throws IOException
     {
     LOG.debug( "sinking to table: {}", tableName );
+
+    // do not delete if initialized from within a task
+    if( isReplace() && conf.get( "mapred.task.partition" ) == null )
+      deletePath( conf );
+
+    makeDirs( conf );
 
     conf.set( TableOutputFormat.OUTPUT_TABLE, tableName );
     super.sinkInit( conf );
