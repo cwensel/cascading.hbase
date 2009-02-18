@@ -67,9 +67,9 @@ public class HBaseFullTest extends TestCase
         Pipe parsePipe = new Each("insert", new Fields("line"), new RegexSplitter(new Fields("num", "content:lower",
                 "content:upper"), " "));
 
-        String keyName = "num";
-        String[] columnNames = { "content:lower", "content:upper" };
-        Tap hBaseTap = new HBaseFullTap("multitable", new HBaseFullScheme(keyName, columnNames), SinkMode.REPLACE);
+        Fields keyField = new Fields("num");
+        Fields[] columnFields = { new Fields( "content:lower") , new Fields("content:upper") };
+        Tap hBaseTap = new HBaseFullTap("multitable", new HBaseFullScheme(keyField, columnFields), SinkMode.REPLACE);
 
         Flow parseFlow = new FlowConnector(properties).connect(source, hBaseTap, parsePipe);
 
@@ -110,9 +110,9 @@ public class HBaseFullTest extends TestCase
     public void testGroupByCount() throws IOException
     {
 
-        String keyName = "num";
-        String[] columnNames = { "content:lower", "content:upper" };
-        Tap source = new HBaseFullTap("multitable", new HBaseFullScheme(keyName, columnNames), SinkMode.REPLACE);
+        Fields keyField = new Fields("num");
+        Fields[] columnFields = { new Fields( "content:lower") , new Fields("content:upper") };
+        Tap source = new HBaseFullTap("multitable", new HBaseFullScheme(keyField, columnFields), SinkMode.REPLACE);
 
         Scheme sinkScheme = new TextLine(new Fields("content:lower", "count"));
         Tap sink = new Hfs(sinkScheme, "lowercount", true);

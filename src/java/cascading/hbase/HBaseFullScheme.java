@@ -49,26 +49,13 @@ public class HBaseFullScheme extends Scheme
     private static final Logger LOG = LoggerFactory.getLogger(HBaseFullScheme.class);
 
     /** Field keyFields */
-    private String keyName;
-    private Fields keyFields;
+    private Fields keyField;
 
     /** Field valueFields */
     private String[] columnNames;
     private Fields[] columnFields;
     private byte[][] fields = null;
 
-    /**
-     * Constructor HBaseScheme creates a new HBaseScheme instance.
-     * 
-     * @param keyName
-     *            of type String
-     * @param columnName
-     *            of type String
-     */
-    public HBaseFullScheme(String keyName, String columnName)
-    {
-        this(keyName, new String[] { columnName });
-    }
 
     /**
      * Constructor HBaseScheme creates a new HBaseScheme instance.
@@ -78,19 +65,18 @@ public class HBaseFullScheme extends Scheme
      * @param columnNames
      *            of type String[]
      */
-    public HBaseFullScheme(String keyName, String[] columnNames)
+    public HBaseFullScheme(Fields keyField, Fields[] columnFields)
     {
-        this.keyName = keyName;
-        this.keyFields = new Fields(keyName);
-        this.columnNames = columnNames;
+        this.keyField = keyField;
+        this.columnFields = columnFields;
 
-        this.columnFields = new Fields[columnNames.length];
-        for (int i = 0; i < columnNames.length; i++)
+        this.columnNames = new String[columnFields.length];
+        for (int i = 0; i < columnFields.length; i++)
         {
-            this.columnFields[i] = new Fields(columnNames[i]);
+            this.columnNames[i] = (String) columnFields[i].get(0);
         }
 
-        setSourceSink(this.keyFields, this.columnFields);
+        setSourceSink(this.keyField, this.columnFields);
 
     }
 
@@ -101,11 +87,6 @@ public class HBaseFullScheme extends Scheme
 
         setSourceFields(allFields);
         setSinkFields(allFields);
-    }
-
-    public String getKeyName()
-    {
-        return keyName;
     }
 
     /**
@@ -161,7 +142,7 @@ public class HBaseFullScheme extends Scheme
 
     public void sink(TupleEntry tupleEntry, OutputCollector outputCollector) throws IOException
     {
-        Tuple key = tupleEntry.selectTuple(keyFields);
+        Tuple key = tupleEntry.selectTuple(keyField);
 
         byte[] keyBytes = Bytes.toBytes(key.getString(0));
         BatchUpdate batchUpdate = new BatchUpdate(keyBytes);
