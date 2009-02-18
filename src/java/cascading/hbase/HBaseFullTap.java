@@ -128,7 +128,7 @@ public class HBaseFullTap extends Tap
     String[] familyNames = ( (HBaseFullScheme) getScheme() ).getFamilyNames();
 
     for( String familyName : familyNames )
-      tableDescriptor.addFamily( new HColumnDescriptor( familyName + ":" ) );
+      tableDescriptor.addFamily( new HColumnDescriptor( familyName ) );
 
     hBaseAdmin.createTable( tableDescriptor );
 

@@ -13,6 +13,9 @@
 package cascading.hbase;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import cascading.scheme.Scheme;
 import cascading.tuple.Fields;
@@ -51,19 +54,20 @@ public class HBaseFullScheme extends Scheme {
 	private Fields keyFields;
 
 	/** Field valueFields */
-	private String[] familyNames;
-	private Fields[] valueFields;
+	private String[] columnNames;
+	private Fields[] columnFields;
+	private byte[][] fields = null;
 
 	/**
 	 * Constructor HBaseScheme creates a new HBaseScheme instance.
 	 * 
 	 * @param keyName
 	 *            of type String
-	 * @param familyName
+	 * @param columnName
 	 *            of type String
 	 */
-	public HBaseFullScheme(String keyName, String familyName) {
-		this(keyName, new String[] { familyName });
+	public HBaseFullScheme(String keyName, String columnName) {
+		this(keyName, new String[] { columnName });
 	}
 
 	/**
@@ -71,26 +75,26 @@ public class HBaseFullScheme extends Scheme {
 	 * 
 	 * @param keyName
 	 *            of type String
-	 * @param familyNames
+	 * @param columnNames
 	 *            of type String[]
 	 */
-	public HBaseFullScheme(String keyName, String[] familyNames) {
+	public HBaseFullScheme(String keyName, String[] columnNames) {
 		this.keyName = keyName;
 		this.keyFields = new Fields(keyName);
-		this.familyNames = familyNames;
+		this.columnNames = columnNames;
 
-		this.valueFields = new Fields[familyNames.length];
-		for (int i = 0; i < familyNames.length; i++) {
-			this.valueFields[i] = new Fields(familyNames[i]);
+		this.columnFields = new Fields[columnNames.length];
+		for (int i = 0; i < columnNames.length; i++) {
+			this.columnFields[i] = new Fields(columnNames[i]);
 		}
 
-		setSourceSink(this.keyFields, this.valueFields);
+		setSourceSink(this.keyFields, this.columnFields);
 
 	}
 
-	private void setSourceSink(Fields keyFields, Fields[] valueFields) {
-		Fields allFields = Fields.join(keyFields, Fields.join(valueFields)); // prepend
-																				// keys
+	private void setSourceSink(Fields keyFields, Fields[] columnFields) {
+		Fields allFields = Fields.join(keyFields, Fields.join(columnFields)); // prepend
+		// keys
 
 		setSourceFields(allFields);
 		setSinkFields(allFields);
@@ -106,7 +110,17 @@ public class HBaseFullScheme extends Scheme {
 	 * @return the familyNames (type String[]) of this HBaseScheme object.
 	 */
 	public String[] getFamilyNames() {
-		return familyNames;
+		HashSet<String> familyNames = new HashSet<String>();
+		for (String columnName : columnNames) {
+			int pos = columnName.indexOf(":");
+			if (pos > 0) {
+				familyNames.add(columnName.substring(0, pos + 1));
+			}
+			else {
+				familyNames.add(columnName + ":");
+			}
+		}
+		return familyNames.toArray(new String[0]);
 	}
 
 	public Tuple source(Object key, Object value) {
@@ -117,12 +131,22 @@ public class HBaseFullScheme extends Scheme {
 
 		result.add(Bytes.toString(keyWritable.get()));
 
-		for (byte[] bytes : row.keySet()) {
+		for (byte[] bytes : getFields(this.columnNames)) {
 			Cell cell = row.get(bytes);
-			result.add(Bytes.toString(cell.getValue()));
+			result.add(cell!=null?Bytes.toString(cell.getValue()):"");
 		}
 
 		return result;
+	}
+
+	private byte[][] getFields(String[] columnNames) {
+		if (fields == null)
+			fields = new byte[columnNames.length][];
+
+		for (int i = 0; i < columnNames.length; i++)
+			fields[i] = Bytes.toBytes(hbaseColumn(columnNames[i]));
+
+		return fields;
 	}
 
 	public void sink(TupleEntry tupleEntry, OutputCollector outputCollector)
@@ -132,14 +156,15 @@ public class HBaseFullScheme extends Scheme {
 		byte[] keyBytes = Bytes.toBytes(key.getString(0));
 		BatchUpdate batchUpdate = new BatchUpdate(keyBytes);
 
-		for (int i = 0; i < valueFields.length; i++) {
-			Fields fieldSelector = valueFields[i];
+		for (int i = 0; i < columnFields.length; i++) {
+			Fields fieldSelector = columnFields[i];
 			TupleEntry values = tupleEntry.selectEntry(fieldSelector);
 
 			for (int j = 0; j < values.getFields().size(); j++) {
 				Fields fields = values.getFields();
 				Tuple tuple = values.getTuple();
-				batchUpdate.put(hbaseColumn(fields.get(j).toString()), Bytes.toBytes(tuple.getString(j)));
+				batchUpdate.put(hbaseColumn(fields.get(j).toString()), Bytes
+						.toBytes(tuple.getString(j)));
 			}
 		}
 
@@ -164,14 +189,17 @@ public class HBaseFullScheme extends Scheme {
 
 	private String getColumns() {
 		String columns = new String();
-		for (String family : familyNames) {
-			columns += hbaseColumn(family) + " ";
+		for (String column : columnNames) {
+			columns += hbaseColumn(column) + " ";
 		}
 		return columns;
 	}
 
-	private String hbaseColumn(String field) {
-		return field + ":";
+	private String hbaseColumn(String columnName) {
+		if (columnName.indexOf(":") > 0) {
+			return columnName;
+		}
+		return columnName + ":";
 	}
 
 }

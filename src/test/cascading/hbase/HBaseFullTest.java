@@ -21,11 +21,17 @@ import org.junit.Test;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
+import cascading.operation.Aggregator;
 import cascading.operation.Identity;
+import cascading.operation.aggregator.Count;
 import cascading.operation.regex.RegexSplitter;
 import cascading.pipe.Each;
+import cascading.pipe.Every;
+import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
+import cascading.scheme.Scheme;
 import cascading.scheme.TextLine;
+import cascading.tap.Hfs;
 import cascading.tap.Lfs;
 import cascading.tap.SinkMode;
 import cascading.tap.Tap;
@@ -35,66 +41,91 @@ import cascading.tuple.TupleEntryIterator;
 /**
  *
  */
-public class HBaseFullTest extends TestCase
-  {
-  transient private static Properties properties = new Properties();
+public class HBaseFullTest extends TestCase {
+	transient private static Properties properties = new Properties();
 
-  String inputFile = "src/test/data/small.txt";
+	String inputFile = "src/test/data/small.txt";
 
-  @Override
-  protected void setUp() throws Exception
-    {
-    super.setUp();
-	properties.setProperty("fs.default.name", "hdfs://localhost:9000");
-	properties.setProperty("mapred.job.tracker", "localhost:9001");
-	properties.setProperty("hbase.master", "localhost:60000");
-	properties.setProperty("hbase.rootdir", "hdfs://localhost:9000/hbase");
-    }
+	@Override
+	protected void setUp() throws Exception {
+		super.setUp();
+		properties.setProperty("fs.default.name", "hdfs://localhost:9000");
+		properties.setProperty("mapred.job.tracker", "localhost:9001");
+		properties.setProperty("hbase.master", "localhost:60000");
+		properties.setProperty("hbase.rootdir", "hdfs://localhost:9000/hbase");
 
-  @Test
-  public void testHBaseMultiFamily() throws IOException
-    {
-    // create flow to read from local file and insert into HBase
-    Tap source = new Lfs( new TextLine(), inputFile );
+	}
 
-    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "test", "lower", "upper" ), " " ) );
+	@Test
+	public void testHBaseMultiFamily() throws IOException {
+		// create flow to read from local file and insert into HBase
+		Tap source = new Lfs(new TextLine(), inputFile);
 
-    String keyName = "test";
-    String[] familyNames = {"lower", "upper"};
-    Tap hBaseTap = new HBaseFullTap( "multitable", new HBaseFullScheme( keyName, familyNames ), SinkMode.REPLACE );
+		Pipe parsePipe = new Each("insert", new Fields("line"),
+				new RegexSplitter(new Fields("num", "content:lower", "content:upper"), " "));
 
-    Flow parseFlow = new FlowConnector( properties ).connect( source, hBaseTap, parsePipe );
+		String keyName = "num";
+		String[] columnNames = { "content:lower", "content:upper" };
+		Tap hBaseTap = new HBaseFullTap("multitable", new HBaseFullScheme(
+				keyName, columnNames), SinkMode.REPLACE);
 
-    parseFlow.complete();
+		Flow parseFlow = new FlowConnector(properties).connect(source,
+				hBaseTap, parsePipe);
 
-    verifySink( parseFlow, 5 );
+		parseFlow.complete();
 
-    // create flow to read from hbase and save to local file
-    Tap sink = new Lfs( new TextLine(), "build/test/multifamily", SinkMode.REPLACE );
+		verifySink(parseFlow, 5);
 
-    Pipe copyPipe = new Each( "read", new Identity() );
+		// create flow to read from hbase and save to local file
+		Tap sink = new Hfs(new TextLine(), "multifamily",
+				SinkMode.REPLACE);
 
-    Flow copyFlow = new FlowConnector( properties ).connect( hBaseTap, sink, copyPipe );
+		Pipe copyPipe = new Each("read", new Identity());
 
-    copyFlow.complete();
+		Flow copyFlow = new FlowConnector(properties).connect(hBaseTap, sink,
+				copyPipe);
 
-    verifySink( copyFlow, 5 );
-    }
+		copyFlow.complete();
 
-  private void verifySink( Flow flow, int expects ) throws IOException
-    {
-    int count = 0;
+		verifySink(copyFlow, 5);
+	}
 
-    TupleEntryIterator iterator = flow.openSink();
+	private void verifySink(Flow flow, int expects) throws IOException {
+		int count = 0;
 
-    while(iterator.hasNext())
-      {
-      count++;
-      System.out.println( "iterator.next() = " + iterator.next() );
-      }
+		TupleEntryIterator iterator = flow.openSink();
 
-    iterator.close();
+		while (iterator.hasNext()) {
+			count++;
+			System.out.println("iterator.next() = " + iterator.next());
+		}
 
-    assertEquals( "wrong number of values", expects, count );
-    }
-  }
+		iterator.close();
+
+		assertEquals("wrong number of values", expects, count);
+	}
+
+	@Test
+	public void testGroupByCount() throws IOException {
+
+		String keyName = "num";
+		String[] columnNames = { "content:lower", "content:upper" };
+		Tap source = new HBaseFullTap("multitable", new HBaseFullScheme(keyName,
+				columnNames), SinkMode.REPLACE);
+
+		Scheme sinkScheme = new TextLine(new Fields("content:lower", "count"));
+		Tap sink = new Hfs(sinkScheme, "lowercount", true);
+
+		Pipe assembly = new Pipe("lowercount");
+		assembly = new GroupBy(assembly, new Fields("content:lower"));
+		Aggregator count = new Count(new Fields("count"));
+		assembly = new Every(assembly, count);
+
+		Flow copyFlow = new FlowConnector(properties).connect(source, sink,
+				assembly);
+
+		copyFlow.complete();
+
+	}
+
+}
