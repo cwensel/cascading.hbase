@@ -60,10 +60,22 @@ public class HBaseFullScheme extends Scheme
     /**
      * Constructor HBaseScheme creates a new HBaseScheme instance.
      * 
-     * @param keyName
+     * @param keyField
      *            of type String
-     * @param columnNames
-     *            of type String[]
+     * @param columnFields
+     *            of type Fields
+     */
+    public HBaseFullScheme(Fields keyField, Fields columnFields)
+    {
+        this(keyField, Fields.fields( columnFields ));
+    }
+    /**
+     * Constructor HBaseScheme creates a new HBaseScheme instance.
+     * 
+     * @param keyField
+     *            of type Field
+     * @param columnFields
+     *            of type Field[]
      */
     public HBaseFullScheme(Fields keyField, Fields[] columnFields)
     {
@@ -76,8 +88,16 @@ public class HBaseFullScheme extends Scheme
             this.columnNames[i] = (String) columnFields[i].get(0);
         }
 
+        validate();
+        
         setSourceSink(this.keyField, this.columnFields);
 
+    }
+
+    private void validate()
+    {
+    if( keyField.size() != 1 )
+      throw new IllegalArgumentException( "may only have one key field, found: " + keyField.print() );
     }
 
     private void setSourceSink(Fields keyFields, Fields[] columnFields)

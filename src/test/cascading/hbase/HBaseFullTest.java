@@ -68,7 +68,7 @@ public class HBaseFullTest extends TestCase
                 "content:upper"), " "));
 
         Fields keyField = new Fields("num");
-        Fields[] columnFields = { new Fields( "content:lower") , new Fields("content:upper") };
+        Fields columnFields = new Fields( "content:lower","content:upper");
         Tap hBaseTap = new HBaseFullTap("multitable", new HBaseFullScheme(keyField, columnFields), SinkMode.REPLACE);
 
         Flow parseFlow = new FlowConnector(properties).connect(source, hBaseTap, parsePipe);
@@ -111,7 +111,7 @@ public class HBaseFullTest extends TestCase
     {
 
         Fields keyField = new Fields("num");
-        Fields[] columnFields = { new Fields( "content:lower") , new Fields("content:upper") };
+        Fields columnFields = new Fields( "content:lower","content:upper");
         Tap source = new HBaseFullTap("multitable", new HBaseFullScheme(keyField, columnFields), SinkMode.REPLACE);
 
         Scheme sinkScheme = new TextLine(new Fields("content:lower", "count"));
