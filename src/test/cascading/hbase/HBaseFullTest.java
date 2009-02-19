@@ -17,6 +17,7 @@ import java.util.Properties;
 
 import junit.framework.TestCase;
 
+import org.apache.hadoop.hbase.HBaseClusterTestCase;
 import org.junit.Test;
 
 import cascading.flow.Flow;
@@ -41,20 +42,21 @@ import cascading.tuple.TupleEntryIterator;
 /**
  *
  */
-public class HBaseFullTest extends TestCase
+public class HBaseFullTest extends HBaseClusterTestCase
 {
     transient private static Properties properties = new Properties();
 
     String inputFile = "src/test/data/small.txt";
 
+    public HBaseFullTest()
+    {
+        super( 1, false );
+    }
+
     @Override
     protected void setUp() throws Exception
     {
         super.setUp();
-        properties.setProperty("fs.default.name", "hdfs://localhost:9000");
-        properties.setProperty("mapred.job.tracker", "localhost:9001");
-        properties.setProperty("hbase.master", "localhost:60000");
-        properties.setProperty("hbase.rootdir", "hdfs://localhost:9000/hbase");
 
     }
 
