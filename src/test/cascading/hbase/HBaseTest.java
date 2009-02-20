@@ -97,6 +97,7 @@ public class HBaseTest extends HBaseClusterTestCase
 
     Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "ignore", "lower", "upper" ), " " ) );
     parsePipe = new Each( parsePipe, new ExpressionFunction( new Fields( "num" ), "(int) (Math.random() * Integer.MAX_VALUE)" ), Fields.ALL );
+//    parsePipe = new Each( parsePipe, new Debug() );
 
     Fields keyFields = new Fields( "num" );
     String[] familyNames = {"left", "right"};
