@@ -51,9 +51,11 @@ public class HBaseScheme extends Scheme
     /** Field keyFields */
     private Fields keyField;
     /** String columnNames */
-    private String[] columnNames;
+    private String[] familyNames;
     /** Field valueFields  */
     private Fields[] valueFields;
+    /** String columns */
+    private transient String[] columns;
     /** Field fields  */
     private transient byte[][] fields;
 
@@ -88,7 +90,7 @@ public class HBaseScheme extends Scheme
     {
         this.keyField = keyFields;
         //The column Names only holds the family Names.
-        this.columnNames = familyNames;
+        this.familyNames = familyNames;
         this.valueFields = valueFields;
 
         setSourceSink(this.keyField, this.valueFields);
@@ -124,16 +126,6 @@ public class HBaseScheme extends Scheme
         this.keyField = keyField;
         this.valueFields = valueFields;
 
-        //The column names include the familyName:columnName
-        this.columnNames = new String[valueFields.length];
-        for (int i = 0; i < valueFields.length; i++)
-        {
-            for (int j = 0; j < valueFields[i].size(); j++) 
-            {
-                this.columnNames[i] = (String) valueFields[i].get(j);
-            }
-        }
-
         validate();
 
         setSourceSink(this.keyField, this.valueFields);
@@ -161,19 +153,20 @@ public class HBaseScheme extends Scheme
      */
     public String[] getFamilyNames()
     {
-        HashSet<String> familyNames = new HashSet<String>();
-        for (String columnName : columnNames)
-        {
-            if (isFullyQualified)
+        HashSet<String> familyNameSet = new HashSet<String>();
+        if (isFullyQualified) {
+            for (String columnName : columns(null, this.valueFields))
             {
                 int pos = columnName.indexOf(":");
-                familyNames.add(hbaseColumn(pos>0?columnName.substring(0, pos):columnName));
-            } else
+                familyNameSet.add(hbaseColumn(pos>0?columnName.substring(0, pos):columnName));
+            }
+        } else {
+            for (String familyName : familyNames)
             {
-                familyNames.add(hbaseColumn(columnName));
+                familyNameSet.add(hbaseColumn(familyName));
             }
         }
-        return familyNames.toArray(new String[0]);
+        return familyNameSet.toArray(new String[0]);
     }
 
     public Tuple source(Object key, Object value)
@@ -197,7 +190,7 @@ public class HBaseScheme extends Scheme
     private byte[][] getFieldsBytes()
     {
         if( fields == null )
-          fields = makeBytes( this.columnNames, this.valueFields );
+          fields = makeBytes( this.familyNames, this.valueFields );
     
         return fields;
     }
@@ -221,7 +214,7 @@ public class HBaseScheme extends Scheme
                 if (isFullyQualified)
                     batchUpdate.put(hbaseColumn(fields.get(j).toString()), Bytes.toBytes(tuple.getString(j)));
                 else
-                    batchUpdate.put(hbaseColumn(columnNames[i]) + fields.get(j).toString(), Bytes.toBytes(tuple.getString(j)));
+                    batchUpdate.put(hbaseColumn(familyNames[i]) + fields.get(j).toString(), Bytes.toBytes(tuple.getString(j)));
 
             }
         }
@@ -249,17 +242,20 @@ public class HBaseScheme extends Scheme
 
     private String getColumns()
     {
-        return Util.join(columns(this.columnNames, this.valueFields), " ");
+        return Util.join(columns(this.familyNames, this.valueFields), " ");
     }
 
     private String[] columns(String[] familyNames, Fields[] fieldsArray)
     {
+        if (columns != null)
+            return columns;
+        
         int size = 0;
 
         for (Fields fields : fieldsArray)
             size += fields.size();
 
-        String[] columns = new String[size];
+        columns = new String[size];
 
         for (int i = 0; i < fieldsArray.length; i++)
         {
