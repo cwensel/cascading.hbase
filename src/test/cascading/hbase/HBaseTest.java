@@ -49,7 +49,7 @@ public class HBaseTest extends HBaseClusterTestCase
 
   public HBaseTest()
     {
-    super( 1, false );
+    super( 1, true );
     }
 
   @Override
@@ -95,13 +95,12 @@ public class HBaseTest extends HBaseClusterTestCase
     // create flow to read from local file and insert into HBase
     Tap source = new Lfs( new TextLine(), inputFile );
 
-    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "ignore", "lower", "upper" ), " " ) );
+    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "ignore", "left:lower", "right:upper" ), " " ) );
     parsePipe = new Each( parsePipe, new ExpressionFunction( new Fields( "num" ), "(int) (Math.random() * Integer.MAX_VALUE)" ), Fields.ALL );
 
     Fields keyFields = new Fields( "num" );
-    String[] familyNames = {"left", "right"};
-    Fields[] valueFields = new Fields[]{new Fields( "lower" ), new Fields( "upper" )};
-    Tap hBaseTap = new HBaseTap( "multitable", new HBaseScheme( keyFields, familyNames, valueFields ) );
+    Fields[] valueFields = new Fields[]{new Fields( "left:lower" ), new Fields( "right:upper" )};
+    Tap hBaseTap = new HBaseTap( "multitable", new HBaseScheme( keyFields, valueFields ) );
 
     Flow parseFlow = new FlowConnector( properties ).connect( source, hBaseTap, parsePipe );
 
