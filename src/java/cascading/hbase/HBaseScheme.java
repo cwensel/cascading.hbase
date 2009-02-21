@@ -128,7 +128,10 @@ public class HBaseScheme extends Scheme
         this.columnNames = new String[valueFields.length];
         for (int i = 0; i < valueFields.length; i++)
         {
-            this.columnNames[i] = (String) valueFields[i].get(0);
+            for (int j = 0; j < valueFields[i].size(); j++) 
+            {
+                this.columnNames[i] = (String) valueFields[i].get(j);
+            }
         }
 
         validate();
