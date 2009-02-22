@@ -50,7 +50,7 @@ public class HBaseScheme extends Scheme
 
     /** Field keyFields */
     private Fields keyField;
-    /** String columnNames */
+    /** String familyNames */
     private String[] familyNames;
     /** Field valueFields  */
     private Fields[] valueFields;
