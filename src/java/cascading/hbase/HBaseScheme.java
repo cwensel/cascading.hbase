@@ -180,8 +180,29 @@ public class HBaseScheme extends Scheme
 
         for (byte[] bytes : getFieldsBytes())
         {
+            String fieldName = Bytes.toString(bytes);
             Cell cell = row.get(bytes);
-            result.add(cell != null ? Bytes.toString(cell.getValue()) : null);
+            if (cell != null) {
+                result.add(Bytes.toString(cell.getValue()));
+            } else {
+                boolean found = false;
+                String delimitedColumnValue = new String();
+                for (byte[] col: row.keySet()) {
+                    String column = Bytes.toString(col);
+                    if (column.startsWith(fieldName)) {
+                        delimitedColumnValue += column;
+                        delimitedColumnValue += "=";
+                        delimitedColumnValue += Bytes.toString(row.get(col).getValue());
+                        delimitedColumnValue += ",";
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    result.add(null);
+                } else {
+                    result.add(delimitedColumnValue.substring(0, delimitedColumnValue.length()-1));
+                }
+            }
         }
 
         return result;
