@@ -181,7 +181,7 @@ public class HBaseScheme extends Scheme
         for (byte[] bytes : getFieldsBytes())
         {
             Cell cell = row.get(bytes);
-            result.add(cell != null ? Bytes.toString(cell.getValue()) : "");
+            result.add(cell != null ? Bytes.toString(cell.getValue()) : null);
         }
 
         return result;
