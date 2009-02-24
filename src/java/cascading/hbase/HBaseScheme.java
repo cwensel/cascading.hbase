@@ -61,6 +61,9 @@ public class HBaseScheme extends Scheme
 
     private boolean isFullyQualified = false;
 
+    private static String COLUMN_DELIMITER = ",";
+    private static String NAMEVALUE_DELIMITER = "=";
+
     /**
      * Constructor HBaseScheme creates a new HBaseScheme instance.
      * 
@@ -191,9 +194,9 @@ public class HBaseScheme extends Scheme
                     String column = Bytes.toString(col);
                     if (column.startsWith(fieldName)) {
                         delimitedColumnValue += column;
-                        delimitedColumnValue += "=";
+                        delimitedColumnValue += NAMEVALUE_DELIMITER;
                         delimitedColumnValue += Bytes.toString(row.get(col).getValue());
-                        delimitedColumnValue += ",";
+                        delimitedColumnValue += COLUMN_DELIMITER;
                         found = true;
                     }
                 }
@@ -232,8 +235,19 @@ public class HBaseScheme extends Scheme
             {
                 Fields fields = values.getFields();
                 Tuple tuple = values.getTuple();
-                if (isFullyQualified)
-                    batchUpdate.put(hbaseColumn(fields.get(j).toString()), Bytes.toBytes(tuple.getString(j)));
+                if (isFullyQualified) {
+                    String col = hbaseColumn(fields.get(j).toString());
+                    String val = tuple.getString(j);
+                    if (val.indexOf(col) > -1) {  //TODO: need to look at better solution to determine column family with multiple columns
+                        String[] columns = val.split(COLUMN_DELIMITER);
+                        for (String col_val : columns) {
+                            String[] split = col_val.split(NAMEVALUE_DELIMITER);
+                            batchUpdate.put(split[0], Bytes.toBytes(split[1]));
+                        }
+                    } else {
+                        batchUpdate.put(col, Bytes.toBytes(val));
+                    }
+                }
                 else
                     batchUpdate.put(hbaseColumn(familyNames[i]) + fields.get(j).toString(), Bytes.toBytes(tuple.getString(j)));
 

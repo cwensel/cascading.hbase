@@ -110,17 +110,9 @@ public class HBaseTap extends Tap
         return new TapCollector(this, conf);
     }
 
-    private HBaseAdmin getHBaseAdmin() throws MasterNotRunningException
-    {
-        if (hBaseAdmin == null)
-            hBaseAdmin = new HBaseAdmin(new HBaseConfiguration());
-
-        return hBaseAdmin;
-    }
-
     public boolean makeDirs(JobConf conf) throws IOException
     {
-        HBaseAdmin hBaseAdmin = getHBaseAdmin();
+        HBaseAdmin hBaseAdmin = new HBaseAdmin(new HBaseConfiguration(conf));
 
         if (hBaseAdmin.tableExists(tableName))
             return true;
@@ -142,7 +134,7 @@ public class HBaseTap extends Tap
     public boolean deletePath(JobConf conf) throws IOException
     {
         // eventually keep table meta-data to source table create
-        HBaseAdmin hBaseAdmin = getHBaseAdmin();
+        HBaseAdmin hBaseAdmin = new HBaseAdmin(new HBaseConfiguration(conf));
 
         if (!hBaseAdmin.tableExists(tableName))
             return true;
@@ -157,7 +149,8 @@ public class HBaseTap extends Tap
 
     public boolean pathExists(JobConf conf) throws IOException
     {
-        return getHBaseAdmin().tableExists(tableName);
+        HBaseAdmin hBaseAdmin = new HBaseAdmin(new HBaseConfiguration(conf));
+        return hBaseAdmin.tableExists(tableName);
     }
 
     public long getPathModified(JobConf conf) throws IOException
