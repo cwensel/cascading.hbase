@@ -18,15 +18,19 @@
   <!--<property file="${user.home}/${name}.build.properties" />-->
   <!--<property file="${root}/build.properties" />-->
 
+	<property name="homedir" location="/home/hbase"/>
+	
   <!-- these are optional, only used if you uncomment the project.class.path filesets below -->
-  <property name="hadoop.home" location="${basedir}/../hadoop"/>
+  <property name="hadoop.home" location="${homedir}/hadoop"/>
   <property name="hadoop.lib" location="${hadoop.home}/lib"/>
+  <echo message="hadoop.home ${hadoop.home}"/>
 
-  <property name="hbase.home" location="${basedir}/../hbase"/>
+  <property name="hbase.home" location="${homedir}/hbase"/>
   <property name="hbase.lib" location="${hbase.home}/lib"/>
 
   <!-- assumes Cascading shares the same parent directory, change if necessary -->
-  <property name="cascading.home" location="${basedir}/../cascading"/>
+  <property name="cascading.home" location="${homedir}/cascading"/>
+  <echo message="cascading.home ${cascading.home}"/>
   <property file="${cascading.home}/version.properties"/>
   <property name="cascading.release.version" value="x.y.z"/>
   <property name="cascading.filename.core" value="cascading-core-${cascading.release.version}.jar"/>
@@ -40,8 +44,11 @@
     <available file="${cascading.home}/${cascading.filename.core}"/>
   </condition>
 
-  <property name="cascading.lib.core" value="${cascading.path}/${cascading.filename.core}"/>
-  <property name="cascading.lib.xml" value="${cascading.path}/${cascading.filename.xml}"/>
+	
+  <!--property name="cascading.lib.core" value="${cascading.path}/${cascading.filename.core}"/>
+  <property name="cascading.lib.xml" value="${cascading.path}/${cascading.filename.xml}"/-->
+	<property name="cascading.lib.core" value="${cascading.path}${cascading.filename.core}"/>
+  <property name="cascading.lib.xml"  value="${cascading.path}${cascading.filename.xml}"/>
 
   <property name="src.dir" location="${basedir}/src/java"/>
   <property name="src.test" location="${basedir}/src/test"/>
@@ -129,9 +136,9 @@
       </fileset>
     </copy>
 
-    <javac srcdir="${src.test}" destdir="${build.test}" verbose="off">
+    <!--javac srcdir="${src.test}" destdir="${build.test}" verbose="off">
       <classpath refid="project.class.path"/>
-    </javac>
+    </javac-->
 
     <copy todir="${build.test}">
       <fileset dir="${src.test}">

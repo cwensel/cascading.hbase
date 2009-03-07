@@ -18,13 +18,8 @@ import java.util.Map;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
-import cascading.operation.Aggregator;
-import cascading.operation.Identity;
-import cascading.operation.aggregator.Count;
 import cascading.operation.regex.RegexSplitter;
 import cascading.pipe.Each;
-import cascading.pipe.Every;
-import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
 import cascading.scheme.TextLine;
 import cascading.tap.Lfs;
@@ -36,40 +31,40 @@ import cascading.tuple.Fields;
  *
  */
 public class MultiFamilyFullyQualifiedTest extends HBaseTestCase
-{
-    transient private static Map<Object, Object> properties = new HashMap<Object, Object>();
+  {
+  transient private static Map<Object, Object> properties = new HashMap<Object, Object>();
 
-    String inputFile = "src/test/data/small.txt";
+  String inputFile = "src/test/data/small.txt";
 
-    public MultiFamilyFullyQualifiedTest()
+  public MultiFamilyFullyQualifiedTest()
     {
-        super(1, false);
+    super( 1, false );
     }
 
-    @Override
-    protected void setUp() throws Exception
+  @Override
+  protected void setUp() throws Exception
     {
-        super.setUp();
+    super.setUp();
 
-        // MultiMapReducePlanner.setJobConf( properties, conf );
+    // MultiMapReducePlanner.setJobConf( properties, conf );
     }
 
-    public void testHBaseMultiFamily() throws IOException
+  public void testHBaseMultiFamily() throws IOException
     {
-        // create flow to read from local file and insert into HBase
-        Tap source = new Lfs(new TextLine(), inputFile);
+    // create flow to read from local file and insert into HBase
+    Tap source = new Lfs( new TextLine(), inputFile );
 
-        Pipe parsePipe = new Each("insert", new Fields("line"), new RegexSplitter(new Fields("num", "left:lower", "right"), " "));
-        
-        Fields keyFields = new Fields("num");
-        Fields valueFields = new Fields("left:lower", "right");
-        Tap hBaseTap = new HBaseTap("multitable", new HBaseScheme(keyFields, valueFields), SinkMode.REPLACE);
+    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "num", "left:lower", "right" ), " " ) );
 
-        Flow parseFlow = new FlowConnector(properties).connect(source, hBaseTap, parsePipe);
-        
-        parseFlow.complete();
+    Fields keyFields = new Fields( "num" );
+    Fields valueFields = new Fields( "left:lower", "right" );
+    Tap hBaseTap = new HBaseTap( "multitable", new HBaseScheme( keyFields, valueFields ), SinkMode.REPLACE );
 
-        verifySink(parseFlow, 5);
+    Flow parseFlow = new FlowConnector( properties ).connect( source, hBaseTap, parsePipe );
+
+    parseFlow.complete();
+
+    verifySink( parseFlow, 5 );
 
 //        Pipe assembly = new Pipe("wordcount");
 //        assembly = new GroupBy(assembly, new Fields("left:lower"));
@@ -85,4 +80,4 @@ public class MultiFamilyFullyQualifiedTest extends HBaseTestCase
 //        verifySink(countFlow, 3);
 
     }
-}
+  }

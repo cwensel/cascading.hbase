@@ -16,169 +16,173 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tap.TapException;
-import cascading.tap.SinkMode;
-import cascading.tap.hadoop.TapIterator;
 import cascading.tap.hadoop.TapCollector;
-import cascading.tuple.TupleEntryIterator;
+import cascading.tap.hadoop.TapIterator;
 import cascading.tuple.TupleEntryCollector;
-import cascading.flow.Flow;
+import cascading.tuple.TupleEntryIterator;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.hadoop.hbase.mapred.TableOutputFormat;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.MasterNotRunningException;
-import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.MasterNotRunningException;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.mapred.TableOutputFormat;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.JobConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The HBaseTap class is a {@link Tap} subclass. It is used in conjunction with the {@HBaseFullScheme}
  * to allow for the reading and writing of data to and from a HBase cluster.
- * 
  */
 public class HBaseTap extends Tap
-{
-    /** Field LOG */
-    private static final Logger LOG = LoggerFactory.getLogger(HBaseTap.class);
+  {
+  /** Field LOG */
+  private static final Logger LOG = LoggerFactory.getLogger( HBaseTap.class );
 
-    /** Field SCHEME */
-    public static final String SCHEME = "hbase";
+  /** Field SCHEME */
+  public static final String SCHEME = "hbase";
 
-    /** Field hBaseAdmin */
-    private transient HBaseAdmin hBaseAdmin;
+  /** Field hBaseAdmin */
+  private transient HBaseAdmin hBaseAdmin;
 
-    private String tableName;
+  private String tableName;
 
-    /**
-     * Constructor HBaseTap creates a new HBaseTap instance.
-     * 
-     * @param tableName
-     *            of type String
-     * @param HBaseFullScheme
-     *            of type HBaseFullScheme
-     */
-    public HBaseTap(String tableName, HBaseScheme HBaseFullScheme)
+  /**
+   * Constructor HBaseTap creates a new HBaseTap instance.
+   *
+   * @param tableName       of type String
+   * @param HBaseFullScheme of type HBaseFullScheme
+   */
+  public HBaseTap( String tableName, HBaseScheme HBaseFullScheme )
     {
-        super(HBaseFullScheme, SinkMode.APPEND);
-        this.tableName = tableName;
+    super(HBaseFullScheme, SinkMode.APPEND);
+    this.tableName = tableName;
     }
 
-    /**
-     * Constructor HBaseTap creates a new HBaseTap instance.
-     * 
-     * @param tableName
-     *            of type String
-     * @param HBaseFullScheme
-     *            of type HBaseFullScheme
-     * @param sinkMode
-     *            of type SinkMode
-     */
-    public HBaseTap(String tableName, HBaseScheme HBaseFullScheme, SinkMode sinkMode)
+  /**
+   * Constructor HBaseTap creates a new HBaseTap instance.
+   *
+   * @param tableName       of type String
+   * @param HBaseFullScheme of type HBaseFullScheme
+   * @param sinkMode        of type SinkMode
+   */
+  public HBaseTap( String tableName, HBaseScheme HBaseFullScheme, SinkMode sinkMode )
     {
-        super(HBaseFullScheme, sinkMode);
-        this.tableName = tableName;
+    super( HBaseFullScheme, sinkMode );
+    this.tableName = tableName;
     }
 
-    private URI getURI()
+  private URI getURI()
     {
-        try
-        {
-            return new URI(SCHEME, tableName, null);
-        } catch (URISyntaxException exception)
-        {
-            throw new TapException("unable to create uri", exception);
-        }
+    try
+      {
+      return new URI( SCHEME, tableName, null );
+      }
+    catch( URISyntaxException exception )
+      {
+      throw new TapException( "unable to create uri", exception );
+      }
     }
 
-    public Path getPath()
+  public Path getPath()
     {
-        return new Path(getURI().toString());
+    return new Path( getURI().toString() );
     }
 
-    public TupleEntryIterator openForRead(JobConf conf) throws IOException
+  public TupleEntryIterator openForRead( JobConf conf ) throws IOException
     {
-        return new TupleEntryIterator(getSourceFields(), new TapIterator(this, conf));
+    return new TupleEntryIterator( getSourceFields(), new TapIterator( this, conf ) );
     }
 
-    public TupleEntryCollector openForWrite(JobConf conf) throws IOException
+  public TupleEntryCollector openForWrite( JobConf conf ) throws IOException
     {
-        return new TapCollector(this, conf);
+    return new TapCollector( this, conf );
     }
 
-    public boolean makeDirs(JobConf conf) throws IOException
+  private HBaseAdmin getHBaseAdmin() throws MasterNotRunningException
     {
-        HBaseAdmin hBaseAdmin = new HBaseAdmin(new HBaseConfiguration(conf));
+    if( hBaseAdmin == null )
+      hBaseAdmin = new HBaseAdmin( new HBaseConfiguration() );
 
-        if (hBaseAdmin.tableExists(tableName))
-            return true;
-
-        LOG.debug("creating hbase table: {}", tableName);
-
-        HTableDescriptor tableDescriptor = new HTableDescriptor(tableName);
-
-        String[] familyNames = ((HBaseScheme) getScheme()).getFamilyNames();
-
-        for (String familyName : familyNames)
-            tableDescriptor.addFamily(new HColumnDescriptor(familyName));
-
-        hBaseAdmin.createTable(tableDescriptor);
-
-        return true;
+    return hBaseAdmin;
     }
 
-    public boolean deletePath(JobConf conf) throws IOException
+  public boolean makeDirs( JobConf conf ) throws IOException
     {
-        // eventually keep table meta-data to source table create
-        HBaseAdmin hBaseAdmin = new HBaseAdmin(new HBaseConfiguration(conf));
+    HBaseAdmin hBaseAdmin = getHBaseAdmin();
 
-        if (!hBaseAdmin.tableExists(tableName))
-            return true;
+    // TODO need to add check if the families that are being written to
+    // exists already
+    if( hBaseAdmin.tableExists( tableName ) )
+      return true;
 
-        LOG.debug("deleting hbase table: {}", tableName);
+    LOG.debug( "creating hbase table: {}", tableName );
 
-        hBaseAdmin.disableTable(tableName);
-        hBaseAdmin.deleteTable(tableName);
+    HTableDescriptor tableDescriptor = new HTableDescriptor( tableName );
+    String columnNames = ( (HBaseScheme) getScheme() ).getColumnNames();
+    
+    String[] familyNames = columnNames.split(" ");
 
-        return true;
+    for( String familyName : familyNames )
+      tableDescriptor.addFamily( new HColumnDescriptor( familyName ) );
+
+    hBaseAdmin.createTable( tableDescriptor );
+
+    return true;
     }
 
-    public boolean pathExists(JobConf conf) throws IOException
+  public boolean deletePath( JobConf conf ) throws IOException
     {
-        HBaseAdmin hBaseAdmin = new HBaseAdmin(new HBaseConfiguration(conf));
-        return hBaseAdmin.tableExists(tableName);
+    // eventually keep table meta-data to source table create
+    HBaseAdmin hBaseAdmin = getHBaseAdmin();
+
+    if( !hBaseAdmin.tableExists( tableName ) )
+      return true;
+
+    LOG.debug( "deleting hbase table: {}", tableName );
+
+    hBaseAdmin.disableTable( tableName );
+    hBaseAdmin.deleteTable( tableName );
+
+    return true;
     }
 
-    public long getPathModified(JobConf conf) throws IOException
+  public boolean pathExists( JobConf conf ) throws IOException
     {
-        return System.currentTimeMillis(); // currently unable to find last mod time on a table
+    return getHBaseAdmin().tableExists( tableName );
     }
 
-    @Override
-    public void sinkInit(JobConf conf) throws IOException
+  public long getPathModified( JobConf conf ) throws IOException
     {
-        LOG.debug("sinking to table: {}", tableName);
-
-        // do not delete if initialized from within a task
-        if (isReplace() && conf.get("mapred.task.partition") == null)
-            deletePath(conf);
-
-        makeDirs(conf);
-
-        conf.set(TableOutputFormat.OUTPUT_TABLE, tableName);
-        super.sinkInit(conf);
+    return System.currentTimeMillis(); // currently unable to find last mod time on a table
     }
 
-    @Override
-    public void sourceInit(JobConf conf) throws IOException
+  @Override
+  public void sinkInit( JobConf conf ) throws IOException
     {
-        LOG.debug("sourcing from table: {}", tableName);
+    LOG.debug( "sinking to table: {}", tableName );
 
-        FileInputFormat.addInputPaths(conf, tableName);
-        super.sourceInit(conf);
+    // do not delete if initialized from within a task
+    if( isReplace() && conf.get( "mapred.task.partition" ) == null )
+      deletePath( conf );
+
+    makeDirs( conf );
+
+    conf.set( TableOutputFormat.OUTPUT_TABLE, tableName );
+    super.sinkInit( conf );
     }
-}
+
+  @Override
+  public void sourceInit( JobConf conf ) throws IOException
+    {
+    LOG.debug( "sourcing from table: {}", tableName );
+
+    FileInputFormat.addInputPaths( conf, tableName );
+    super.sourceInit( conf );
+    }
+  }
