@@ -18,7 +18,8 @@
   <!--<property file="${user.home}/${name}.build.properties" />-->
   <!--<property file="${root}/build.properties" />-->
 
-	<property name="homedir" location="/home/hbase"/>
+	<property name="homedir" location="/home/hbase/"/>
+	<property name="project.home" location="${homedir}/cascading.hbase"/>
 	
   <!-- these are optional, only used if you uncomment the project.class.path filesets below -->
   <property name="hadoop.home" location="${homedir}/hadoop"/>
@@ -27,7 +28,8 @@
 
   <property name="hbase.home" location="${homedir}/hbase"/>
   <property name="hbase.lib" location="${hbase.home}/lib"/>
-
+  <property name="hbase.build" location="${hbase.home}/build"/>
+	
   <!-- assumes Cascading shares the same parent directory, change if necessary -->
   <property name="cascading.home" location="${homedir}/cascading"/>
   <echo message="cascading.home ${cascading.home}"/>
@@ -44,6 +46,12 @@
     <available file="${cascading.home}/${cascading.filename.core}"/>
   </condition>
 
+	<!-- Cascading.hbase -->
+  <!--property name="cascading.hbase.home"
+  	location="${homedir}/${cascading.hbase}"/-->
+  <echo message="cascading.hbase.home ${project.home}"/>
+  <property name="cascading.hbase.lib" location="${project.home}/lib"/>
+	<echo message="cascading.hbase.home.lib ${cascading.hbase.lib}"/>
 	
   <!--property name="cascading.lib.core" value="${cascading.path}/${cascading.filename.core}"/>
   <property name="cascading.lib.xml" value="${cascading.path}/${cascading.filename.xml}"/-->
@@ -74,10 +82,6 @@
     <pathelement location="${cascading.lib.core}"/>
     <pathelement location="${cascading.lib.xml}"/>
 
-    <fileset dir="${cascading.libs}">
-      <include name="**/*.jar"/>
-    </fileset>
-
 
     <!--<fileset dir="${lib.dir}">-->
       <!--<include name="*.jar"/>-->
@@ -106,20 +110,28 @@
     <fileset dir="${hbase.lib}">
       <include name="**/*.jar"/>
     </fileset>
+  	
+    <fileset dir="${cascading.libs}">
+      <include name="**/*.jar"/>
+    </fileset>
 
+    <fileset dir="${cascading.home}/build">
+      <include name="**/*.jar"/>
+    </fileset>
+  	
   </path>
 
-  <target name="clean">
-
+	
+  <!-- Targets -->
+	
+	<target name="clean">
     <echo message="cleaning..."/>
     <delete dir="${build.dir}"/>
     <delete dir="${dist}"/>
     <delete dir="${ant.project.name}.tgz"/>
-
   </target>
 
   <target name="build">
-
     <echo message="building..."/>
     <echo message="using cascading lib: ${cascading.lib.core}"/>
     <mkdir dir="${build.classes}"/>
@@ -136,9 +148,9 @@
       </fileset>
     </copy>
 
-    <!--javac srcdir="${src.test}" destdir="${build.test}" verbose="off">
+    <javac srcdir="${src.test}" destdir="${build.test}" verbose="off">
       <classpath refid="project.class.path"/>
-    </javac-->
+    </javac>
 
     <copy todir="${build.test}">
       <fileset dir="${src.test}">
@@ -146,18 +158,75 @@
       </fileset>
     </copy>
 
+    <!-- Copy all dependecy jars to lib directory -->
+    <copy todir="${cascading.hbase.lib}">
+      <!-- HBase -->
+       <fileset dir="${hbase.build}">
+         <include name="*.jar"/>
+       </fileset> 
+   	
+    	
+      <!-- Cascading -->
+      <fileset dir="${cascading.home}/build">
+        <include name="*.jar"/>
+      </fileset>
+      <fileset dir="${cascading.libs}">
+        <include name="*.jar"/>
+      </fileset>
+    </copy>
+  	
+      <!-- Cascading.hbase -->
+      <!--fileset dir="${cascading.hbase.home}/build">
+        <include name="*.jar"/>
+      </fileset-->
+
+    <!-- Hadoop supports jars in a lib directory -->
+    <copy todir="${build.classes}/lib">
+      <fileset dir="${cascading.hbase.lib}">
+        <include name="*.jar"/>
+      </fileset>
+    </copy>
+
+  	
   </target>
 
   <target name="jar" depends="build" description="creates module jar">
-
     <jar jarfile="${build.dir}/${ant.project.name}.jar">
       <fileset dir="${build.classes}"/>
     </jar>
-
   </target>
 
+  <target name="dist" depends="clean" description="packages current project">
+    <mkdir dir="${dist}"/>
+    <copy todir="${dist}">
+      <fileset dir=".">
+        <include name="data/**"/>
+        <include name="src/**"/>
+        <include name="lib/**"/>
+        <include name="build.xml"/>
+        <include name="README.txt"/>
+      </fileset>
+    </copy>
+  </target>
 
-  <target name="test" depends="build">
+  <target name="tar" depends="dist" description="creates an archive of current project">
+    <tar destfile="${ant.project.name}.tgz"
+         compression="gzip">
+      <tarfileset dir="dist/" prefix="${ant.project.name}">
+        <include name="**/**"/>
+      </tarfileset>
+    </tar>
+  </target>
+	
+  <target name="test-jar" depends="build" description="creates module test-jar"> 
+    <jar jarfile="${build.dir}/${ant.project.name}-test.jar" >
+      <fileset dir="${build.test}"/>
+    	<fileset dir="${build.classes}" />
+      <fileset dir="${src.test}" includes="**/*.properties" />
+    </jar>
+  </target>
+
+  <target name="test" depends="build" description="Run tests">
     <echo message="running all tests..."/>
 
     <mkdir dir="${test.results}"/>
@@ -188,31 +257,5 @@
 
   </target>
 
-  <target name="dist" depends="clean" description="packages current project">
-
-    <mkdir dir="${dist}"/>
-
-    <copy todir="${dist}">
-
-      <fileset dir=".">
-        <include name="data/**"/>
-        <include name="src/**"/>
-        <include name="lib/**"/>
-        <include name="build.xml"/>
-        <include name="README.txt"/>
-      </fileset>
-
-    </copy>
-
-  </target>
-
-  <target name="tar" depends="dist" description="creates an archive of current project">
-    <tar destfile="${ant.project.name}.tgz"
-         compression="gzip">
-      <tarfileset dir="dist/" prefix="${ant.project.name}">
-        <include name="**/**"/>
-      </tarfileset>
-    </tar>
-  </target>
 
 </project>
