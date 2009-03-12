@@ -65,6 +65,7 @@ public class DeFlatter extends BaseOperation implements Function {
    */
   @Override
   public void operate(FlowProcess flow, FunctionCall fun) {
+    System.out.println("\tDeFlatter: operate ");
     TupleEntry input = fun.getArguments();
     TupleEntryCollector outputCollector = fun.getOutputCollector();
 
@@ -91,7 +92,7 @@ public class DeFlatter extends BaseOperation implements Function {
             "Tuple to BatchUpdate ended with a key, setting value to null");
         }
       }
-//      System.out.println("key "+new String(key)+ ", val " +new String(val) );
+      System.out.println("key "+new String(key)+ ", val " +new String(val) );
       bu.put(key, val);
     }
     outputCollector.add(new Tuple(bu));
