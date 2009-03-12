@@ -133,15 +133,18 @@ public class NewHBaseTester extends HBaseClusterTestCase {
     //DeFlatten the tuple stream into a Batchupdate
     pipe = new Each(pipe, new DeFlatter(new Fields("bu")) );
     
-    Tap sink = new HBaseTap("multitable1",
-        new HBaseScheme(), SinkMode.APPEND);
+    Tap sink = new HBaseTap("multitable2",
+      new HBaseScheme(), SinkMode.APPEND);
     
 //    Tap sink = new Lfs(
 //      new TextLine(), output, SinkMode.APPEND);
+//    Tap sink = new Lfs(
+//      new HBaseScheme(), output, SinkMode.APPEND);
     
     Flow flow =
       new FlowConnector(properties).connect(source, sink, pipe);
 
+    System.out.println("before complete");
     flow.complete();
     
     verifySource(flow, 5);

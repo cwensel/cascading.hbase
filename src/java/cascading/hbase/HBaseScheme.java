@@ -48,8 +48,13 @@ public class HBaseScheme extends Scheme {
   /**
    * Default contructor
    */
-  public HBaseScheme() {} 
+  public HBaseScheme(){} 
 
+  /**
+   * 
+   */
+  public HBaseScheme( Fields keyFields, Fields[] valueFields ){}
+  
   /**
    * Constructor for creating a HBaseScheme.
    * If multiple columns are needed they need to be put into this string
@@ -114,6 +119,7 @@ public class HBaseScheme extends Scheme {
 
 
   public void sinkInit(Tap tap, JobConf conf) throws IOException {
+    System.out.println("sinkinit: ");
     conf.setOutputFormat(TableOutputFormat.class);
 
     conf.setOutputKeyClass(ImmutableBytesWritable.class);
