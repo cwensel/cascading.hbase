@@ -252,6 +252,9 @@
         <fileset dir="${src.test}">
           <include name="**/*Test.java"/>
         </fileset>
+        <fileset dir="${hbase.home}/conf">
+          <include name="hbase-site.xml"/>
+        </fileset>
       </batchtest>
     </junit>
 
