@@ -24,7 +24,7 @@ HDFS_DIR=/backup/$HDFS_STAMP
 mkdir -p $LOG_DIR
 
 
-$HADOOP_BIN jar $JAR_DIR/cascading-hbase-test.jar test/NewHBaseTester
+$HADOOP_BIN jar $JAR_DIR/cascading-hbase-test.jar cascading/hbase/NewHBaseTester
 #   $JOB_MAPPERS
 #   $HDFS_DIR/$TABLE/* \
 #   $JOB_MAPPERS

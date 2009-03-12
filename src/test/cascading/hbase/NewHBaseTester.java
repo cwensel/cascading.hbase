@@ -1,4 +1,4 @@
-package test;
+package cascading.hbase;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,6 +58,14 @@ public class NewHBaseTester extends HBaseClusterTestCase {
     super( i, b );
   }
   
+ 
+  @Override
+  protected void setUp()
+  throws Exception{
+    super.setUp();
+ 
+// MultiMapReducePlanner.setJobConf( properties, conf );
+  }
   
   transient static Map<Object, Object> properties =
     new HashMap<Object,Object>();
@@ -132,12 +140,13 @@ public class NewHBaseTester extends HBaseClusterTestCase {
     
     //DeFlatten the tuple stream into a Batchupdate
     pipe = new Each(pipe, new DeFlatter(new Fields("bu")) );
+    pipe = new Each(pipe, new Debug());
     
-    Tap sink = new HBaseTap("multitable2",
-      new HBaseScheme(), SinkMode.APPEND);
+//    Tap sink = new HBaseTap("multitable2",
+//      new HBaseScheme(), SinkMode.APPEND);
     
-//    Tap sink = new Lfs(
-//      new TextLine(), output, SinkMode.APPEND);
+    Tap sink = new Lfs(
+      new TextLine(), output, SinkMode.APPEND);
 //    Tap sink = new Lfs(
 //      new HBaseScheme(), output, SinkMode.APPEND);
     

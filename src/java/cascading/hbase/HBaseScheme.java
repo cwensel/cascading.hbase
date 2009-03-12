@@ -53,7 +53,7 @@ public class HBaseScheme extends Scheme {
   /**
    * 
    */
-  public HBaseScheme( Fields keyFields, Fields[] valueFields ){}
+//  public HBaseScheme( Fields keyFields, Fields[] valueFields ){}
   
   /**
    * Constructor for creating a HBaseScheme.
