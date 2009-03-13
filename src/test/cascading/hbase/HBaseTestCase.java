@@ -59,6 +59,24 @@ public class HBaseTestCase extends HBaseClusterTestCase
     assertEquals( "wrong number of values in " + flow.getSink().toString(), expects, count );
     }
 
+  protected void verifySource( Flow flow, int expects ) throws IOException
+    {
+    int count = 0;
+
+    TupleEntryIterator iterator = flow.openSource();
+
+    while( iterator.hasNext() )
+      {
+      count++;
+      System.out.println( "iterator.next() = " + iterator.next() );
+      }
+
+    iterator.close();
+
+    assertEquals( "wrong number of values in " + flow.getSources().values().iterator().next().toString(), expects, count );
+    }
+
+
   protected void loadTable( String tableName, String charCol, int size ) throws IOException
     {
     HTable table = new HTable( conf, tableName );
