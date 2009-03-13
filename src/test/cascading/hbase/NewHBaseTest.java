@@ -107,7 +107,7 @@ public class NewHBaseTest extends HBaseClusterTestCase {
     
     String columns = "family:";
     Tap source = new HBaseTap("multitable1",
-      new HBaseScheme(columns), SinkMode.APPEND);
+      new HBaseRawScheme(columns), SinkMode.APPEND);
     
     Pipe pipe = null;
     //Flatten the RowResult from HBase into a tuple stream
@@ -118,7 +118,7 @@ public class NewHBaseTest extends HBaseClusterTestCase {
     pipe = new Each(pipe, new Debug());
     
     Tap sink = new HBaseTap("multitable2",
-      new HBaseScheme(), SinkMode.APPEND);
+      new HBaseRawScheme(), SinkMode.APPEND);
     
 //    Tap sink = new Lfs(
 //      new TextLine(), output, SinkMode.APPEND);
