@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * the {@HBaseFullScheme} to allow for the reading and writing of data to and
  * from a HBase cluster.
  */
-public class HBaseTap extends Tap
+public class HBaseRawTap extends Tap
   {
   /** Field LOG */
   private static final Logger LOG = LoggerFactory.getLogger( HBaseTap.class );
@@ -58,7 +58,7 @@ public class HBaseTap extends Tap
    * @param tableName       of type String
    * @param HBaseFullScheme of type HBaseFullScheme
    */
-  public HBaseTap( String tableName, HBaseSchemeBase HBaseFullScheme )
+  public HBaseRawTap( String tableName, HBaseSchemeBase HBaseFullScheme )
     {
     super( HBaseFullScheme, SinkMode.APPEND );
     this.tableName = tableName;
@@ -71,7 +71,8 @@ public class HBaseTap extends Tap
    * @param HBaseFullScheme of type HBaseFullScheme
    * @param sinkMode        of type SinkMode
    */
-  public HBaseTap( String tableName, HBaseSchemeBase HBaseFullScheme, SinkMode sinkMode )
+  public HBaseRawTap( String tableName, HBaseSchemeBase HBaseFullScheme,
+    SinkMode sinkMode )
     {
     super( HBaseFullScheme, sinkMode );
     this.tableName = tableName;
