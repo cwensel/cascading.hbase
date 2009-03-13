@@ -72,13 +72,13 @@ public class RawHBaseTest extends HBaseTestCase
     parsePipe = new Each( parsePipe, new ExpressionFunction( new Fields( "num" ), "(int) (Math.random() * Integer.MAX_VALUE)" ), Fields.ALL );
 //    parsePipe = new Each( parsePipe, new Debug() );
 
-    Tap hBaseTap = new HBaseTap( "rawtable", new HBaseScheme( new Fields( "num" ), new Fields( "family:lower" ) ) );
+    Tap hBaseTap = new HBaseRawTap( "rawtable", new HBaseScheme( new Fields( "num" ), new Fields( "family:lower" ) ) );
 
     Flow loadFlow = new FlowConnector( properties ).connect( localSource, hBaseTap, parsePipe );
 
     loadFlow.complete();
 
-    Tap source = new HBaseTap( "rawtable", new HBaseRawScheme( "family:" ) );
+    Tap source = new HBaseRawTap( "rawtable", new HBaseRawScheme( "family:" ) );
 
     Pipe pipe = new Pipe( "write" );
 
@@ -89,7 +89,7 @@ public class RawHBaseTest extends HBaseTestCase
     pipe = new Each( pipe, new DeFlatter( new Fields( "bu" ) ) );
     pipe = new Each( pipe, new Debug() );
 
-    Tap sink = new HBaseTap( "rawtable-target", new HBaseRawScheme(), SinkMode.APPEND );
+    Tap sink = new HBaseRawTap( "rawtable-target", new HBaseRawScheme(), SinkMode.APPEND );
 
     Flow flow = new FlowConnector( properties ).connect( source, sink, pipe );
 
