@@ -78,7 +78,7 @@ public class RawHBaseTest extends HBaseTestCase
 
     loadFlow.complete();
 
-    Tap source = new HBaseTap( "rawtable", new HBaseRawScheme( "family:" ) );
+    Tap source = new HBaseTap( "rawtable", new HBaseRawScheme( new Fields( "table" ), "family:" ) );
 
     Pipe pipe = new Pipe( "write" );
 
@@ -86,10 +86,10 @@ public class RawHBaseTest extends HBaseTestCase
     pipe = new Each( pipe, new Flatter() );
 
     //DeFlatten the tuple stream into a Batchupdate
-    pipe = new Each( pipe, new DeFlatter( new Fields( "bu" ) ) );
+    pipe = new Each( pipe, new DeFlatter( new Fields( "batchupdate" ) ) );
     pipe = new Each( pipe, new Debug() );
 
-    Tap sink = new HBaseTap( "rawtable-target", new HBaseRawScheme(), SinkMode.REPLACE );
+    Tap sink = new HBaseTap( "rawtable-target", new HBaseRawScheme( new Fields( "batchupdate" ) ), SinkMode.REPLACE );
 
     Flow flow = new FlowConnector( properties ).connect( source, sink, pipe );
 

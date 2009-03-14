@@ -15,6 +15,7 @@ import java.io.IOException;
 
 import cascading.scheme.Scheme;
 import cascading.tap.Tap;
+import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 import org.apache.hadoop.hbase.io.BatchUpdate;
@@ -40,47 +41,39 @@ public class HBaseRawScheme extends HBaseSchemeBase
   private static final Logger LOG = LoggerFactory.getLogger( HBaseScheme.class );
 
   /** String columns, for keeping the current column names */
-  private String columns = "";
+  private String columnNames = "";
 
-  /** Default contructor */
-  public HBaseRawScheme()
+  public HBaseRawScheme( Fields fields )
     {
+    setSourceFields( fields );
+    setSinkFields( fields );
+    }
+
+  public HBaseRawScheme( Fields fields, String columnNames )
+    {
+    setSourceFields( fields );
+    setSinkFields( fields );
+    this.columnNames = columnNames;
     }
 
   /**
-   * Constructor for creating a HBaseScheme.
-   * If multiple columns are needed they need to be put into this string
-   * and separated by a space.
-   */
-  public HBaseRawScheme( String columnNames )
-    {
-    columns = columnNames;
-    }
-
-
-  /**
-   * Method to set the column names
+   * Method getColumnNames returns the columnNames of this HBaseRawScheme object.
    *
-   * @param columnNames to be set to
+   * @return the columnNames (type String) of this HBaseRawScheme object.
    */
-  public void setColumns( String columnNames )
+  protected String getColumnNames()
     {
-    columns = columnNames;
+    return columnNames;
     }
 
   /**
-   * Method getFamilyNames returns the columnNames.
+   * Method getFamilyNames returns the familyNames of this HBaseRawScheme object.
    *
-   * @return the columnNames
+   * @return the familyNames (type String[]) of this HBaseRawScheme object.
    */
-  public String getColumns()
-    {
-    return columns;
-    }
-
   public String[] getFamilyNames()
     {
-    return getColumns().split( " " );
+    return getColumnNames().split( " " );
     }
 
   /**
@@ -110,16 +103,11 @@ public class HBaseRawScheme extends HBaseSchemeBase
    */
   public void sink( TupleEntry tupleEntry, OutputCollector outputCollector ) throws IOException
     {
-    Tuple values = tupleEntry.getTuple();
+    Tuple values = tupleEntry.selectTuple( getSinkFields() );
 
-    if( values.size() != 1 )
-      {
-      throw new IOException( "The number of values in the tuple " + values.size() + " is not the expected 1" );
-      }
     //TODO should add check that the entry is a BatchUpdate
     outputCollector.collect( null, values.get( 0 ) );
     }
-
 
   public void sinkInit( Tap tap, JobConf conf ) throws IOException
     {
@@ -134,9 +122,9 @@ public class HBaseRawScheme extends HBaseSchemeBase
     {
     conf.setInputFormat( TableInputFormat.class );
 
-    LOG.debug( "sourcing from columns: {}", columns );
+    LOG.debug( "sourcing from columns: {}", columnNames );
 
-    conf.set( TableInputFormat.COLUMN_LIST, columns );
+    conf.set( TableInputFormat.COLUMN_LIST, columnNames );
     }
 
   }

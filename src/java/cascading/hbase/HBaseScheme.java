@@ -45,8 +45,9 @@ public class HBaseScheme extends HBaseSchemeBase
   {
   /** Field LOG */
   private static final Logger LOG = LoggerFactory.getLogger( HBaseScheme.class );
-
+  /** Field COLUMN_DELIMITER */
   private static String COLUMN_DELIMITER = ",";
+  /** Field NAMEVALUE_DELIMITER */
   private static String NAMEVALUE_DELIMITER = "=";
 
   /** Field keyFields */
@@ -278,13 +279,13 @@ public class HBaseScheme extends HBaseSchemeBase
     {
     conf.setInputFormat( TableInputFormat.class );
 
-    String columns = getColumns();
+    String columns = getColumnNames();
     LOG.debug( "sourcing from columns: {}", columns );
 
     conf.set( TableInputFormat.COLUMN_LIST, columns );
     }
 
-  protected String getColumns()
+  protected String getColumnNames()
     {
     return Util.join( columns( this.familyNames, this.valueFields ), " " );
     }
