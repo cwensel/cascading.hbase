@@ -26,7 +26,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.mapred.TableOutputFormat;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -47,34 +46,31 @@ public class HBaseRawTap extends Tap
   /** Field SCHEME */
   public static final String SCHEME = "hbase";
 
-  /** Field hBaseAdmin */
-  private transient HBaseAdmin hBaseAdmin;
-
+  /** Field tableName */
   private String tableName;
 
   /**
    * Constructor HBaseTap creates a new HBaseTap instance.
    *
-   * @param tableName       of type String
-   * @param HBaseFullScheme of type HBaseFullScheme
+   * @param tableName      of type String
+   * @param hBaseRawScheme of type HBaseFullScheme
    */
-  public HBaseRawTap( String tableName, HBaseSchemeBase HBaseFullScheme )
+  public HBaseRawTap( String tableName, HBaseRawScheme hBaseRawScheme )
     {
-    super( HBaseFullScheme, SinkMode.APPEND );
+    super( hBaseRawScheme, SinkMode.APPEND );
     this.tableName = tableName;
     }
 
   /**
    * Constructor HBaseTap creates a new HBaseTap instance.
    *
-   * @param tableName       of type String
-   * @param HBaseFullScheme of type HBaseFullScheme
-   * @param sinkMode        of type SinkMode
+   * @param tableName      of type String
+   * @param hBaseRawScheme of type HBaseFullScheme
+   * @param sinkMode       of type SinkMode
    */
-  public HBaseRawTap( String tableName, HBaseSchemeBase HBaseFullScheme,
-    SinkMode sinkMode )
+  public HBaseRawTap( String tableName, HBaseRawScheme hBaseRawScheme, SinkMode sinkMode )
     {
-    super( HBaseFullScheme, sinkMode );
+    super( hBaseRawScheme, sinkMode );
     this.tableName = tableName;
     }
 
@@ -105,17 +101,9 @@ public class HBaseRawTap extends Tap
     return new TapCollector( this, conf );
     }
 
-  private HBaseAdmin getHBaseAdmin() throws MasterNotRunningException
-    {
-    if( hBaseAdmin == null )
-      hBaseAdmin = new HBaseAdmin( new HBaseConfiguration() );
-
-    return hBaseAdmin;
-    }
-
   public boolean makeDirs( JobConf conf ) throws IOException
     {
-    HBaseAdmin hBaseAdmin = getHBaseAdmin();
+    HBaseAdmin hBaseAdmin = new HBaseAdmin( new HBaseConfiguration( conf ) );
 
     // TODO need to add check if the families that are being written to
     // exists already
@@ -140,7 +128,7 @@ public class HBaseRawTap extends Tap
   public boolean deletePath( JobConf conf ) throws IOException
     {
     // eventually keep table meta-data to source table create
-    HBaseAdmin hBaseAdmin = getHBaseAdmin();
+    HBaseAdmin hBaseAdmin = new HBaseAdmin( new HBaseConfiguration( conf ) );
 
     if( !hBaseAdmin.tableExists( tableName ) )
       return true;
@@ -155,7 +143,7 @@ public class HBaseRawTap extends Tap
 
   public boolean pathExists( JobConf conf ) throws IOException
     {
-    return getHBaseAdmin().tableExists( tableName );
+    return new HBaseAdmin( new HBaseConfiguration( conf ) ).tableExists( tableName );
     }
 
   public long getPathModified( JobConf conf ) throws IOException

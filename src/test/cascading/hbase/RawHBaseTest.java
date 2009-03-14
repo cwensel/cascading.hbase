@@ -68,11 +68,11 @@ public class RawHBaseTest extends HBaseTestCase
     {
     Tap localSource = new Lfs( new TextLine(), inputFile );
 
-    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "ignore", "lower", "upper" ), " " ) );
+    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "ignore", "family:lower", "family:upper" ), " " ) );
     parsePipe = new Each( parsePipe, new ExpressionFunction( new Fields( "num" ), "(int) (Math.random() * Integer.MAX_VALUE)" ), Fields.ALL );
 //    parsePipe = new Each( parsePipe, new Debug() );
 
-    Tap hBaseTap = new HBaseRawTap( "rawtable", new HBaseScheme( new Fields( "num" ), new Fields( "family:lower" ) ) );
+    Tap hBaseTap = new HBaseTap( "rawtable", new HBaseScheme( new Fields( "num" ), new Fields( "family:lower" ) ), SinkMode.REPLACE );
 
     Flow loadFlow = new FlowConnector( properties ).connect( localSource, hBaseTap, parsePipe );
 
@@ -89,14 +89,14 @@ public class RawHBaseTest extends HBaseTestCase
     pipe = new Each( pipe, new DeFlatter( new Fields( "bu" ) ) );
     pipe = new Each( pipe, new Debug() );
 
-    Tap sink = new HBaseRawTap( "rawtable-target", new HBaseRawScheme(), SinkMode.APPEND );
+    Tap sink = new HBaseRawTap( "rawtable-target", new HBaseRawScheme(), SinkMode.REPLACE );
 
     Flow flow = new FlowConnector( properties ).connect( source, sink, pipe );
 
     flow.complete();
 
-    verifySource( flow, 5 );
-    verifySink( flow, 5 );
+    verifySource( flow, 13 );
+    verifySink( flow, 1 );
     }
 
   }
