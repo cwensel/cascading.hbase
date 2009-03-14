@@ -78,7 +78,6 @@ public class AddFamily extends BaseOperation implements Function
   /* (non-Javadoc)
    * @see cascading.operation.Function#operate(cascading.flow.FlowProcess, cascading.operation.FunctionCall)
    */
-  @Override
   public void operate( FlowProcess flow, FunctionCall fun )
     {
     TupleEntry input = fun.getArguments();
