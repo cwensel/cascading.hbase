@@ -29,4 +29,11 @@ import cascading.scheme.Scheme;
 public abstract class HBaseSchemeBase extends Scheme
   {
   protected abstract String getColumns();
+
+  /**
+   * Method getFamilyNames returns the familyNames of this HBaseRawScheme object.
+   *
+   * @return the familyNames (type String[]) of this HBaseRawScheme object.
+   */
+  public abstract String[] getFamilyNames();
   }
