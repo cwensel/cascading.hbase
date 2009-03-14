@@ -30,8 +30,10 @@ Building
 
  > ant -Dcascading.home=... -Dhadoop.home=... -Dhbase.home=... test
 
-where "..." is the install path of each of the dependencies.
+ where "..." is the install path of each of the dependencies.
 
+ Optionally, a build.properties file can be created in the project root
+ that defines the *.home properties above.
 
 Using
 
