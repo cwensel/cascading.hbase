@@ -13,7 +13,9 @@
 package cascading.hbase;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 import cascading.scheme.Scheme;
 import cascading.tap.Tap;
@@ -44,21 +46,23 @@ public class HBaseScheme extends HBaseSchemeBase
   /** Field LOG */
   private static final Logger LOG = LoggerFactory.getLogger( HBaseScheme.class );
 
+  private static String COLUMN_DELIMITER = ",";
+  private static String NAMEVALUE_DELIMITER = "=";
+
   /** Field keyFields */
   private Fields keyField;
   /** String familyNames */
   private String[] familyNames;
   /** Field valueFields */
   private Fields[] valueFields;
-  /** String columns */
-  private transient String[] columns;
-  /** Field fields */
-  private transient byte[][] fields;
-
+  /** Field isFullyQualified */
   private boolean isFullyQualified = false;
 
-  private static String COLUMN_DELIMITER = ",";
-  private static String NAMEVALUE_DELIMITER = "=";
+  /** String columns */
+  private transient String[] columns;
+
+  /** Field fields */
+  private transient byte[][] fields;
 
   /**
    * Constructor HBaseScheme creates a new HBaseScheme instance.
@@ -174,34 +178,33 @@ public class HBaseScheme extends HBaseSchemeBase
       {
       String fieldName = Bytes.toString( bytes );
       Cell cell = row.get( bytes );
+
       if( cell != null )
         {
         result.add( Bytes.toString( cell.getValue() ) );
         }
       else
         {
-        boolean found = false;
-        String delimitedColumnValue = new String();
-        for( byte[] col : row.keySet() )
+        List<String> values = new ArrayList<String>();
+
+        for( byte[] columnValue : row.keySet() )
           {
-          String column = Bytes.toString( col );
-          if( column.startsWith( fieldName ) )
+          String columnName = Bytes.toString( columnValue );
+
+          if( columnName.startsWith( fieldName ) )
             {
-            delimitedColumnValue += column;
+            String delimitedColumnValue = columnName;
             delimitedColumnValue += NAMEVALUE_DELIMITER;
-            delimitedColumnValue += Bytes.toString( row.get( col ).getValue() );
-            delimitedColumnValue += COLUMN_DELIMITER;
-            found = true;
+            delimitedColumnValue += Bytes.toString( row.get( columnValue ).getValue() );
+
+            values.add( delimitedColumnValue );
             }
           }
-        if( !found )
-          {
+
+        if( values.isEmpty() )
           result.add( null );
-          }
         else
-          {
-          result.add( delimitedColumnValue.substring( 0, delimitedColumnValue.length() - 1 ) );
-          }
+          result.add( Util.join( values, COLUMN_DELIMITER ) );
         }
       }
 
@@ -232,13 +235,17 @@ public class HBaseScheme extends HBaseSchemeBase
         {
         Fields fields = values.getFields();
         Tuple tuple = values.getTuple();
+
         if( isFullyQualified )
           {
           String col = hbaseColumn( fields.get( j ).toString() );
           String val = tuple.getString( j );
+
           if( val.indexOf( col ) > -1 )
-            {  //TODO: need to look at better solution to determine column family with multiple columns
+            {
+            //TODO: need to look at better solution to determine column family with multiple columns
             String[] columns = val.split( COLUMN_DELIMITER );
+
             for( String col_val : columns )
               {
               String[] split = col_val.split( NAMEVALUE_DELIMITER );
@@ -299,10 +306,12 @@ public class HBaseScheme extends HBaseSchemeBase
       Fields fields = fieldsArray[ i ];
 
       for( int j = 0; j < fields.size(); j++ )
+        {
         if( isFullyQualified )
           columns[ i + j ] = hbaseColumn( (String) fields.get( j ) );
         else
           columns[ i + j ] = hbaseColumn( familyNames[ i ] ) + (String) fields.get( j );
+        }
       }
 
     return columns;
@@ -323,8 +332,8 @@ public class HBaseScheme extends HBaseSchemeBase
     {
     if( column.indexOf( ":" ) < 0 )
       return column + ":";
-    return column;
 
+    return column;
     }
 
   }
