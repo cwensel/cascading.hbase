@@ -78,6 +78,11 @@ public class HBaseRawScheme extends HBaseSchemeBase
     return columns;
     }
 
+  public String[] getFamilyNames()
+    {
+    return getColumns().split( " " );
+    }
+
   /**
    * The method that puts the result coming from HBase into a Cascading tuple.
    *
