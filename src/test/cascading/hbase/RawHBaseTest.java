@@ -78,7 +78,7 @@ public class RawHBaseTest extends HBaseTestCase
 
     loadFlow.complete();
 
-    Tap source = new HBaseRawTap( "rawtable", new HBaseRawScheme( "family:" ) );
+    Tap source = new HBaseTap( "rawtable", new HBaseRawScheme( "family:" ) );
 
     Pipe pipe = new Pipe( "write" );
 
@@ -89,7 +89,7 @@ public class RawHBaseTest extends HBaseTestCase
     pipe = new Each( pipe, new DeFlatter( new Fields( "bu" ) ) );
     pipe = new Each( pipe, new Debug() );
 
-    Tap sink = new HBaseRawTap( "rawtable-target", new HBaseRawScheme(), SinkMode.REPLACE );
+    Tap sink = new HBaseTap( "rawtable-target", new HBaseRawScheme(), SinkMode.REPLACE );
 
     Flow flow = new FlowConnector( properties ).connect( source, sink, pipe );
 
