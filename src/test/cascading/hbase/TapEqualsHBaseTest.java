@@ -13,19 +13,9 @@
 package cascading.hbase;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-import cascading.flow.Flow;
-import cascading.flow.FlowConnector;
-import cascading.operation.Identity;
-import cascading.operation.regex.RegexSplitter;
-import cascading.pipe.Each;
-import cascading.pipe.Pipe;
-import cascading.scheme.TextLine;
-import cascading.tap.Lfs;
-import cascading.tap.SinkMode;
 import cascading.tap.Tap;
+import cascading.tap.SinkMode;
 import cascading.tuple.Fields;
 
 /**
@@ -33,10 +23,6 @@ import cascading.tuple.Fields;
  */
 public class TapEqualsHBaseTest extends HBaseTestCase
   {
-  transient private static Map<Object, Object> properties = new HashMap<Object, Object>();
-
-  String inputFile = "src/test/data/small.txt";
-
   public TapEqualsHBaseTest()
     {
     super( 1, false );
