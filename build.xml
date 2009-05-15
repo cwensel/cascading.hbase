@@ -16,7 +16,7 @@
 
   <!-- load properties first -->
   <!--<property file="${user.home}/${name}.build.properties" />-->
-  <!--<property file="${root}/build.properties" />-->
+  <property file="build.properties"/>
 
   <!-- these are optional, only used if you uncomment the project.class.path filesets below -->
   <property name="hadoop.home" location="${basedir}/../hadoop"/>
@@ -73,7 +73,7 @@
 
 
     <!--<fileset dir="${lib.dir}">-->
-      <!--<include name="*.jar"/>-->
+    <!--<include name="*.jar"/>-->
     <!--</fileset>-->
 
     <fileset dir="${hadoop.home}">
