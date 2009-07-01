@@ -145,6 +145,25 @@ public class HBaseTap extends Tap
     return System.currentTimeMillis(); // currently unable to find last mod time on a table
     }
 
+  /** @see Tap#equals(Object) */
+  @Override
+  public boolean equals( Object object )
+    {
+    if( this == object )
+      return true;
+    if( object == null || getClass() != object.getClass() )
+      return false;
+    if( !super.equals( object ) )
+      return false;
+
+    HBaseTap hbase = (HBaseTap) object;
+
+    if( tableName != null ? !tableName.equals( hbase.tableName ) : hbase.tableName != null )
+      return false;
+
+    return true;
+    }
+
   @Override
   public void sinkInit( JobConf conf ) throws IOException
     {
