@@ -167,10 +167,15 @@ public class HBaseScheme extends Scheme
 
     result.add( Bytes.toString( keyWritable.get() ) );
 
-    for( byte[] bytes : getFieldsBytes() )
+    for( byte[] fieldName : getFieldsBytes() )
       {
-      Cell cell = row.get( bytes );
-      result.add( cell != null ? Bytes.toString( cell.getValue() ) : "" );
+      Cell cell = row.get( fieldName );
+
+      if( cell == null )
+        continue;
+
+      byte[] fieldValue = cell.getValue();
+      result.add( fieldValue != null ? Bytes.toString( fieldValue ) : "" );
       }
 
     return result;
@@ -200,6 +205,7 @@ public class HBaseScheme extends Scheme
         {
         Fields fields = values.getFields();
         Tuple tuple = values.getTuple();
+
         if( isFullyQualified )
           batchUpdate.put( hbaseColumn( fields.get( j ).toString() ), Bytes.toBytes( tuple.getString( j ) ) );
         else
@@ -246,15 +252,19 @@ public class HBaseScheme extends Scheme
 
     columns = new String[size];
 
+    int count = 0;
+
     for( int i = 0; i < fieldsArray.length; i++ )
       {
       Fields fields = fieldsArray[ i ];
 
       for( int j = 0; j < fields.size(); j++ )
+        {
         if( isFullyQualified )
-          columns[ i + j ] = hbaseColumn( (String) fields.get( j ) );
+          columns[ count++ ] = hbaseColumn( (String) fields.get( j ) );
         else
-          columns[ i + j ] = hbaseColumn( familyNames[ i ] ) + (String) fields.get( j );
+          columns[ count++ ] = hbaseColumn( familyNames[ i ] ) + (String) fields.get( j );
+        }
       }
 
     return columns;
@@ -275,8 +285,8 @@ public class HBaseScheme extends Scheme
     {
     if( column.indexOf( ":" ) < 0 )
       return column + ":";
-    return column;
 
+    return column;
     }
 
   }

@@ -64,6 +64,8 @@
 
   <property name="test.results" location="${build.dir}/results"/>
 
+  <property name="javac.debug" value="true"/>
+
   <property name="dist" location="dist"/>
 
   <path id="project.class.path">
@@ -127,7 +129,7 @@
     <mkdir dir="${build.test}"/>
     <mkdir dir="${lib.dir}"/>
 
-    <javac srcdir="${src.dir}" destdir="${build.classes}" verbose="off">
+    <javac srcdir="${src.dir}" destdir="${build.classes}" verbose="off" debug="${javac.debug}">
       <classpath refid="project.class.path"/>
     </javac>
 
@@ -137,7 +139,7 @@
       </fileset>
     </copy>
 
-    <javac srcdir="${src.test}" destdir="${build.test}" verbose="off">
+    <javac srcdir="${src.test}" destdir="${build.test}" verbose="off" debug="${javac.debug}">
       <classpath refid="project.class.path"/>
     </javac>
 

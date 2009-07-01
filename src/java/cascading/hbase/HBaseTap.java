@@ -13,12 +13,9 @@
 package cascading.hbase;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 import cascading.tap.SinkMode;
 import cascading.tap.Tap;
-import cascading.tap.TapException;
 import cascading.tap.hadoop.TapCollector;
 import cascading.tap.hadoop.TapIterator;
 import cascading.tuple.TupleEntryCollector;
@@ -50,6 +47,7 @@ public class HBaseTap extends Tap
   /** Field hBaseAdmin */
   private transient HBaseAdmin hBaseAdmin;
 
+  /** Field tableName */
   private String tableName;
 
   /**
@@ -77,21 +75,9 @@ public class HBaseTap extends Tap
     this.tableName = tableName;
     }
 
-  private URI getURI()
-    {
-    try
-      {
-      return new URI( SCHEME, tableName, null );
-      }
-    catch( URISyntaxException exception )
-      {
-      throw new TapException( "unable to create uri", exception );
-      }
-    }
-
   public Path getPath()
     {
-    return new Path( getURI().toString() );
+    return new Path( SCHEME + ":/" + tableName.replaceAll( ":", "_" ) );
     }
 
   public TupleEntryIterator openForRead( JobConf conf ) throws IOException
