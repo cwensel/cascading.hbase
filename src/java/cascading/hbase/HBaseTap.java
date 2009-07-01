@@ -75,6 +75,16 @@ public class HBaseTap extends Tap
     this.tableName = tableName;
     }
 
+  /**
+   * Method getTableName returns the tableName of this HBaseTap object.
+   *
+   * @return the tableName (type String) of this HBaseTap object.
+   */
+  public String getTableName()
+    {
+    return tableName;
+    }
+
   public Path getPath()
     {
     return new Path( SCHEME + ":/" + tableName.replaceAll( ":", "_" ) );
