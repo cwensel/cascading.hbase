@@ -13,6 +13,7 @@
 package cascading.hbase;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 
 import cascading.scheme.Scheme;
@@ -50,12 +51,13 @@ public class HBaseScheme extends Scheme
   private String[] familyNames;
   /** Field valueFields */
   private Fields[] valueFields;
+  /** Field isFullyQualified */
+  private boolean isFullyQualified = false;
+
   /** String columns */
   private transient String[] columns;
   /** Field fields */
   private transient byte[][] fields;
-
-  private boolean isFullyQualified = false;
 
 
   /**
@@ -173,11 +175,8 @@ public class HBaseScheme extends Scheme
       {
       Cell cell = row.get( fieldName );
 
-      if( cell == null )
-        continue;
-
-      byte[] fieldValue = cell.getValue();
-      result.add( fieldValue != null ? Bytes.toString( fieldValue ) : "" );
+      byte[] fieldValue = cell == null ? null : cell.getValue();
+      result.add( fieldValue != null ? Bytes.toString( fieldValue ) : null );
       }
 
     return result;
@@ -291,4 +290,38 @@ public class HBaseScheme extends Scheme
     return column;
     }
 
+  @Override
+  public boolean equals( Object object )
+    {
+    if( this == object )
+      return true;
+    if( object == null || getClass() != object.getClass() )
+      return false;
+    if( !super.equals( object ) )
+      return false;
+
+    HBaseScheme that = (HBaseScheme) object;
+
+    if( isFullyQualified != that.isFullyQualified )
+      return false;
+    if( !Arrays.equals( familyNames, that.familyNames ) )
+      return false;
+    if( keyField != null ? !keyField.equals( that.keyField ) : that.keyField != null )
+      return false;
+    if( !Arrays.equals( valueFields, that.valueFields ) )
+      return false;
+
+    return true;
+    }
+
+  @Override
+  public int hashCode()
+    {
+    int result = super.hashCode();
+    result = 31 * result + ( keyField != null ? keyField.hashCode() : 0 );
+    result = 31 * result + ( familyNames != null ? Arrays.hashCode( familyNames ) : 0 );
+    result = 31 * result + ( valueFields != null ? Arrays.hashCode( valueFields ) : 0 );
+    result = 31 * result + ( isFullyQualified ? 1 : 0 );
+    return result;
+    }
   }
