@@ -61,16 +61,6 @@ public class HBaseScheme extends Scheme
   /**
    * Constructor HBaseScheme creates a new HBaseScheme instance.
    *
-   * @param keyFields of type Fields
-   */
-  public HBaseScheme( Fields keyFields )
-    {
-    this( keyFields, new String[0], new Fields[0] );
-    }
-
-  /**
-   * Constructor HBaseScheme creates a new HBaseScheme instance.
-   *
    * @param keyFields   of type Fields
    * @param familyName  of type String
    * @param valueFields of type Fields
