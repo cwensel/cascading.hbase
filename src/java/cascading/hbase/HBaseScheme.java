@@ -207,11 +207,14 @@ public class HBaseScheme extends Scheme
         Fields fields = values.getFields();
         Tuple tuple = values.getTuple();
 
-        if( isFullyQualified )
-          batchUpdate.put( hbaseColumn( fields.get( j ).toString() ), Bytes.toBytes( tuple.getString( j ) ) );
-        else
-          batchUpdate.put( hbaseColumn( familyNames[ i ] ) + fields.get( j ).toString(), Bytes.toBytes( tuple.getString( j ) ) );
+        String value = tuple.getString( j );
 
+        byte[] asBytes = value == null ? null : Bytes.toBytes( value );
+
+        if( isFullyQualified )
+          batchUpdate.put( hbaseColumn( fields.get( j ).toString() ), asBytes );
+        else
+          batchUpdate.put( hbaseColumn( familyNames[ i ] ) + fields.get( j ).toString(), asBytes );
         }
       }
 
