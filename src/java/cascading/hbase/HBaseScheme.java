@@ -57,6 +57,17 @@ public class HBaseScheme extends Scheme
 
   private boolean isFullyQualified = false;
 
+
+  /**
+   * Constructor HBaseScheme creates a new HBaseScheme instance.
+   *
+   * @param keyFields of type Fields
+   */
+  public HBaseScheme( Fields keyFields )
+    {
+    this( keyFields, new String[0], new Fields[0] );
+    }
+
   /**
    * Constructor HBaseScheme creates a new HBaseScheme instance.
    *
@@ -126,7 +137,10 @@ public class HBaseScheme extends Scheme
 
   private void setSourceSink( Fields keyFields, Fields[] columnFields )
     {
-    Fields allFields = Fields.join( keyFields, Fields.join( columnFields ) ); // prepend
+    Fields allFields = keyFields;
+
+    if( columnFields.length != 0 )
+      allFields = Fields.join( keyFields, Fields.join( columnFields ) ); // prepend
 
     setSourceFields( allFields );
     setSinkFields( allFields );
@@ -151,9 +165,7 @@ public class HBaseScheme extends Scheme
     else
       {
       for( String familyName : familyNames )
-        {
         familyNameSet.add( hbaseColumn( familyName ) );
-        }
       }
     return familyNameSet.toArray( new String[0] );
     }
