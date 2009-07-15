@@ -47,6 +47,8 @@ public class HBaseTap extends Tap
   /** Field hBaseAdmin */
   private transient HBaseAdmin hBaseAdmin;
 
+  /** Field hostName */
+  private String quorumNames = "localhost";
   /** Field tableName */
   private String tableName;
 
@@ -72,6 +74,33 @@ public class HBaseTap extends Tap
   public HBaseTap( String tableName, HBaseScheme HBaseFullScheme, SinkMode sinkMode )
     {
     super( HBaseFullScheme, sinkMode );
+    this.tableName = tableName;
+    }
+
+  /**
+   * Constructor HBaseTap creates a new HBaseTap instance.
+   *
+   * @param tableName       of type String
+   * @param HBaseFullScheme of type HBaseFullScheme
+   */
+  public HBaseTap( String quorumNames, String tableName, HBaseScheme HBaseFullScheme )
+    {
+    super( HBaseFullScheme, SinkMode.APPEND );
+    this.quorumNames = quorumNames;
+    this.tableName = tableName;
+    }
+
+  /**
+   * Constructor HBaseTap creates a new HBaseTap instance.
+   *
+   * @param tableName       of type String
+   * @param HBaseFullScheme of type HBaseFullScheme
+   * @param sinkMode        of type SinkMode
+   */
+  public HBaseTap( String quorumNames, String tableName, HBaseScheme HBaseFullScheme, SinkMode sinkMode )
+    {
+    super( HBaseFullScheme, sinkMode );
+    this.quorumNames = quorumNames;
     this.tableName = tableName;
     }
 
@@ -158,6 +187,8 @@ public class HBaseTap extends Tap
   @Override
   public void sinkInit( JobConf conf ) throws IOException
     {
+    conf.set( "hbase.zookeeper.quorum", quorumNames );
+
     LOG.debug( "sinking to table: {}", tableName );
 
     // do not delete if initialized from within a task
@@ -173,6 +204,8 @@ public class HBaseTap extends Tap
   @Override
   public void sourceInit( JobConf conf ) throws IOException
     {
+    conf.set( "hbase.zookeeper.quorum", quorumNames );
+
     LOG.debug( "sourcing from table: {}", tableName );
 
     FileInputFormat.addInputPaths( conf, tableName );
