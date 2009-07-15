@@ -129,17 +129,23 @@ public class HBaseTap extends Tap
     return new TapCollector( this, conf );
     }
 
-  private HBaseAdmin getHBaseAdmin() throws MasterNotRunningException
+  private HBaseAdmin getHBaseAdmin( JobConf conf ) throws MasterNotRunningException
     {
     if( hBaseAdmin == null )
-      hBaseAdmin = new HBaseAdmin( new HBaseConfiguration() );
+      {
+      conf = conf == null ? new JobConf() : new JobConf( conf );
+
+      conf.set( "hbase.zookeeper.quorum", quorumNames );
+
+      hBaseAdmin = new HBaseAdmin( new HBaseConfiguration( conf ) );
+      }
 
     return hBaseAdmin;
     }
 
   public boolean makeDirs( JobConf conf ) throws IOException
     {
-    HBaseAdmin hBaseAdmin = getHBaseAdmin();
+    HBaseAdmin hBaseAdmin = getHBaseAdmin( conf );
 
     if( hBaseAdmin.tableExists( tableName ) )
       return true;
@@ -161,7 +167,7 @@ public class HBaseTap extends Tap
   public boolean deletePath( JobConf conf ) throws IOException
     {
     // eventually keep table meta-data to source table create
-    HBaseAdmin hBaseAdmin = getHBaseAdmin();
+    HBaseAdmin hBaseAdmin = getHBaseAdmin( conf );
 
     if( !hBaseAdmin.tableExists( tableName ) )
       return true;
@@ -176,7 +182,7 @@ public class HBaseTap extends Tap
 
   public boolean pathExists( JobConf conf ) throws IOException
     {
-    return getHBaseAdmin().tableExists( tableName );
+    return getHBaseAdmin( conf ).tableExists( tableName );
     }
 
   public long getPathModified( JobConf conf ) throws IOException
