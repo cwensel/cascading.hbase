@@ -51,8 +51,6 @@ public class HBaseScheme extends Scheme
   private String[] familyNames;
   /** Field valueFields */
   private Fields[] valueFields;
-  /** Field isFullyQualified */
-  private boolean isFullyQualified = false;
 
   /** String columns */
   private transient String[] columns;
@@ -82,7 +80,6 @@ public class HBaseScheme extends Scheme
   public HBaseScheme( Fields keyFields, String[] familyNames, Fields[] valueFields )
     {
     this.keyField = keyFields;
-    //The column Names only holds the family Names.
     this.familyNames = familyNames;
     this.valueFields = valueFields;
 
@@ -110,15 +107,12 @@ public class HBaseScheme extends Scheme
    */
   public HBaseScheme( Fields keyField, Fields[] valueFields )
     {
-    //Set a flag that this is using fully qualified names
-    this.isFullyQualified = true;
     this.keyField = keyField;
     this.valueFields = valueFields;
 
     validate();
 
     setSourceSink( this.keyField, this.valueFields );
-
     }
 
   private void validate()
@@ -146,7 +140,8 @@ public class HBaseScheme extends Scheme
   public String[] getFamilyNames()
     {
     HashSet<String> familyNameSet = new HashSet<String>();
-    if( isFullyQualified )
+
+    if( familyNames == null )
       {
       for( String columnName : columns( null, this.valueFields ) )
         {
@@ -159,6 +154,7 @@ public class HBaseScheme extends Scheme
       for( String familyName : familyNames )
         familyNameSet.add( hbaseColumn( familyName ) );
       }
+
     return familyNameSet.toArray( new String[0] );
     }
 
@@ -211,7 +207,7 @@ public class HBaseScheme extends Scheme
 
         byte[] asBytes = value == null ? null : Bytes.toBytes( value );
 
-        if( isFullyQualified )
+        if( familyNames == null )
           batchUpdate.put( hbaseColumn( fields.get( j ).toString() ), asBytes );
         else
           batchUpdate.put( hbaseColumn( familyNames[ i ] ) + fields.get( j ).toString(), asBytes );
@@ -264,7 +260,7 @@ public class HBaseScheme extends Scheme
 
       for( int j = 0; j < fields.size(); j++ )
         {
-        if( isFullyQualified )
+        if( familyNames == null )
           columns[ count++ ] = hbaseColumn( (String) fields.get( j ) );
         else
           columns[ count++ ] = hbaseColumn( familyNames[ i ] ) + (String) fields.get( j );
@@ -305,8 +301,6 @@ public class HBaseScheme extends Scheme
 
     HBaseScheme that = (HBaseScheme) object;
 
-    if( isFullyQualified != that.isFullyQualified )
-      return false;
     if( !Arrays.equals( familyNames, that.familyNames ) )
       return false;
     if( keyField != null ? !keyField.equals( that.keyField ) : that.keyField != null )
@@ -324,7 +318,6 @@ public class HBaseScheme extends Scheme
     result = 31 * result + ( keyField != null ? keyField.hashCode() : 0 );
     result = 31 * result + ( familyNames != null ? Arrays.hashCode( familyNames ) : 0 );
     result = 31 * result + ( valueFields != null ? Arrays.hashCode( valueFields ) : 0 );
-    result = 31 * result + ( isFullyQualified ? 1 : 0 );
     return result;
     }
   }
