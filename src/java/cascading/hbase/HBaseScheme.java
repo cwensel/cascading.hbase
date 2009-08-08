@@ -22,13 +22,14 @@ import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 import cascading.util.Util;
-import org.apache.hadoop.hbase.io.BatchUpdate;
-import org.apache.hadoop.hbase.io.Cell;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.io.RowResult;
-import org.apache.hadoop.hbase.mapred.TableInputFormat;
-import org.apache.hadoop.hbase.mapred.TableOutputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.slf4j.Logger;
@@ -163,27 +164,22 @@ public class HBaseScheme extends Scheme
     Tuple result = new Tuple();
 
     ImmutableBytesWritable keyWritable = (ImmutableBytesWritable) key;
-    RowResult row = (RowResult) value;
+    Result row = (Result) value;
 
     result.add( Bytes.toString( keyWritable.get() ) );
 
-    for( byte[] fieldName : getFieldsBytes() )
+    for( int i = 0; i < familyNames.length; i++ )
       {
-      Cell cell = row.get( fieldName );
+      String familyName = familyNames[ i ];
 
-      byte[] fieldValue = cell == null ? null : cell.getValue();
-      result.add( fieldValue != null ? Bytes.toString( fieldValue ) : null );
+      for( Object fieldName : valueFields[ i ] )
+        {
+        byte[] bytes = row.getValue( Bytes.toBytes( familyName ), Bytes.toBytes( (String) fieldName ) );
+        result.add(  bytes != null ? Bytes.toString( bytes ) : null  );
+        }
       }
 
     return result;
-    }
-
-  private byte[][] getFieldsBytes()
-    {
-    if( fields == null )
-      fields = makeBytes( this.familyNames, this.valueFields );
-
-    return fields;
     }
 
   public void sink( TupleEntry tupleEntry, OutputCollector outputCollector ) throws IOException
@@ -191,7 +187,7 @@ public class HBaseScheme extends Scheme
     Tuple key = tupleEntry.selectTuple( keyField );
 
     byte[] keyBytes = Bytes.toBytes( key.getString( 0 ) );
-    BatchUpdate batchUpdate = new BatchUpdate( keyBytes );
+    Put put = new Put( keyBytes );
 
     for( int i = 0; i < valueFields.length; i++ )
       {
@@ -207,32 +203,40 @@ public class HBaseScheme extends Scheme
 
         byte[] asBytes = value == null ? null : Bytes.toBytes( value );
 
-        if( familyNames == null )
-          batchUpdate.put( hbaseColumn( fields.get( j ).toString() ), asBytes );
-        else
-          batchUpdate.put( hbaseColumn( familyNames[ i ] ) + fields.get( j ).toString(), asBytes );
+        put.add( Bytes.toBytes( familyNames[ i ] ), Bytes.toBytes( (String) fields.get( j ) ), asBytes );
         }
       }
 
-    outputCollector.collect( null, batchUpdate );
+    outputCollector.collect( null, put );
     }
 
   public void sinkInit( Tap tap, JobConf conf ) throws IOException
     {
-    conf.setOutputFormat( TableOutputFormat.class );
+    conf.set( "mapred.output.format.class", TableOutputFormat.class.getName() );
 
-    conf.setOutputKeyClass( ImmutableBytesWritable.class );
-    conf.setOutputValueClass( BatchUpdate.class );
+//    conf.setOutputKeyClass( ImmutableBytesWritable.class );
+    conf.setOutputValueClass( Writable.class );
     }
 
   public void sourceInit( Tap tap, JobConf conf ) throws IOException
     {
-    conf.setInputFormat( TableInputFormat.class );
+    conf.set( "mapred.input.format.class", TableInputFormat.class.getName() );
 
     String columns = getColumns();
     LOG.debug( "sourcing from columns: {}", columns );
 
-    conf.set( TableInputFormat.COLUMN_LIST, columns );
+    Scan scan = new Scan();
+
+    for( int i = 0; i < familyNames.length; i++ )
+      {
+      String familyName = familyNames[ i ];
+
+      for( Object fieldName : valueFields[ i ] )
+        scan.addColumn( Bytes.toBytes( familyName ), Bytes.toBytes( (String) fieldName ) );
+      }
+
+    conf.set( TableInputFormat.SCAN, Util.serializeBase64( scan ) );
+//    conf.set( TableInputFormat.INPUT_TABLE, columns );
     }
 
   private String getColumns()
@@ -268,17 +272,6 @@ public class HBaseScheme extends Scheme
       }
 
     return columns;
-    }
-
-  private byte[][] makeBytes( String[] familyNames, Fields[] fieldsArray )
-    {
-    String[] columns = columns( familyNames, fieldsArray );
-    byte[][] bytes = new byte[columns.length][];
-
-    for( int i = 0; i < columns.length; i++ )
-      bytes[ i ] = Bytes.toBytes( columns[ i ] );
-
-    return bytes;
     }
 
   private String hbaseColumn( String column )
